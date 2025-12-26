@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cozy Download Manager</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <h1>🎄 Cozy Download Manager</h1>
+      <div class="header-actions">
+        <button class="btn-icon-header" id="settingsBtn" title="Settings">⚙️</button>
+        <button class="btn-primary" id="addDownloadBtn">+ Add Download</button>
+      </div>
+    </header>
+
+    <div class="download-section">
+      <div class="download-stats">
+        <div class="stat-item">
+          <span class="stat-label">Queued:</span>
+          <span class="stat-value" id="queuedCount">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Active:</span>
+          <span class="stat-value" id="activeCount">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Completed:</span>
+          <span class="stat-value" id="completedCount">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Total Speed:</span>
+          <span class="stat-value" id="totalSpeed">0 KB/s</span>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="active">Active & Queue</button>
+        <button class="tab-btn" data-tab="completed">Completed</button>
+        <button class="tab-btn" data-tab="history">History</button>
+      </div>
+
+      <div class="download-list" id="downloadList">
+        <div class="empty-state">
+          <p>No downloads yet. Click "Add Download" to get started!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Download Modal -->
+  <div class="modal" id="addDownloadModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add New Download</h2>
+        <button class="modal-close" id="closeModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="downloadUrl">Download URL:</label>
+          <input type="text" id="downloadUrl" placeholder="https://example.com/file.zip" autofocus>
+        </div>
+        <div class="form-group">
+          <label for="downloadFilename">Filename (optional):</label>
+          <input type="text" id="downloadFilename" placeholder="Leave empty for auto-detect">
+        </div>
+        <div class="form-group">
+          <label for="downloadPriority">Priority:</label>
+          <select id="downloadPriority">
+            <option value="high">High</option>
+            <option value="normal" selected>Normal</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancelBtn">Cancel</button>
+        <button class="btn-primary" id="startDownloadBtn">Start Download</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-content modal-large">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="modal-close" id="closeSettingsModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-section">
+          <h3>Download Settings</h3>
+          <div class="form-group">
+            <label for="downloadPath">Download Path:</label>
+            <div class="input-with-button">
+              <input type="text" id="downloadPath" readonly>
+              <button class="btn-secondary" id="browsePathBtn">Browse</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="maxConcurrent">Max Concurrent Downloads:</label>
+            <input type="number" id="maxConcurrent" min="1" max="10" value="3">
+          </div>
+          <div class="form-group">
+            <label for="maxSegments">Max Segments per Download:</label>
+            <input type="number" id="maxSegments" min="1" max="16" value="8">
+            <small>More segments = faster downloads (if server supports it)</small>
+          </div>
+        </div>
+        
+        <div class="settings-section">
+          <h3>Bandwidth</h3>
+          <div class="form-group">
+            <label for="bandwidthLimit">Bandwidth Limit (KB/s):</label>
+            <input type="number" id="bandwidthLimit" min="0" value="0">
+            <small>0 = Unlimited</small>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Advanced</h3>
+          <div class="form-group">
+            <label for="retryAttempts">Retry Attempts:</label>
+            <input type="number" id="retryAttempts" min="1" max="10" value="3">
+          </div>
+          <div class="form-group">
+            <label for="retryDelay">Retry Delay (ms):</label>
+            <input type="number" id="retryDelay" min="100" value="1000">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancelSettingsBtn">Cancel</button>
+        <button class="btn-primary" id="saveSettingsBtn">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
