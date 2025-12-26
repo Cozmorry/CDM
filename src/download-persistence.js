@@ -116,7 +116,7 @@ class DownloadPersistence {
   /**
    * Add to history
    */
-  addToHistory(downloadInfo) {
+  addHistoryEntry(downloadInfo) {
     try {
       let history = [];
       if (fs.existsSync(this.historyFile)) {

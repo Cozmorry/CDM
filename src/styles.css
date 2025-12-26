@@ -471,6 +471,25 @@ body {
   gap: 1rem;
 }
 
+.info-box {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.info-box p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.info-box strong {
+  color: var(--text-primary);
+  margin-right: 0.5rem;
+}
+
 /* Tabs */
 .tabs {
   display: flex;

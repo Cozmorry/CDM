@@ -58,26 +58,49 @@
         <button class="modal-close" id="closeModal">&times;</button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
-          <label for="downloadUrl">Download URL:</label>
-          <input type="text" id="downloadUrl" placeholder="https://example.com/file.zip" autofocus>
+        <!-- Step 1: Enter URL -->
+        <div id="downloadStep1">
+          <div class="form-group">
+            <label for="downloadUrl">Download URL:</label>
+            <input type="text" id="downloadUrl" placeholder="https://example.com/file.zip" autofocus>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="downloadFilename">Filename (optional):</label>
-          <input type="text" id="downloadFilename" placeholder="Leave empty for auto-detect">
-        </div>
-        <div class="form-group">
-          <label for="downloadPriority">Priority:</label>
-          <select id="downloadPriority">
-            <option value="high">High</option>
-            <option value="normal" selected>Normal</option>
-            <option value="low">Low</option>
-          </select>
+        
+        <!-- Step 2: Review and Edit Details -->
+        <div id="downloadStep2" style="display: none;">
+          <div class="form-group">
+            <label>File Information</label>
+            <div id="fileInfoDisplay" class="info-box">
+              <p><strong>Size:</strong> <span id="fileSizeDisplay">Loading...</span></p>
+              <p><strong>Type:</strong> <span id="fileTypeDisplay">-</span></p>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="downloadFilename">Filename:</label>
+            <input type="text" id="downloadFilename" placeholder="Enter filename" required>
+          </div>
+          <div class="form-group">
+            <label for="downloadPathInput">Download Path:</label>
+            <div class="input-with-button">
+              <input type="text" id="downloadPathInput" readonly>
+              <button type="button" class="btn-secondary" id="browseDownloadPathBtn">Browse</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="downloadPriority">Priority:</label>
+            <select id="downloadPriority">
+              <option value="high">High</option>
+              <option value="normal" selected>Normal</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" id="cancelBtn">Cancel</button>
-        <button class="btn-primary" id="startDownloadBtn">Start Download</button>
+        <button class="btn-secondary" id="backToStep1Btn" style="display: none;">← Back</button>
+        <button class="btn-primary" id="getFileInfoBtn">Next →</button>
+        <button class="btn-primary" id="startDownloadBtn" style="display: none;">Start Download</button>
       </div>
     </div>
   </div>

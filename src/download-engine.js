@@ -1,6 +1,7 @@
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
+const path = require('path');
 const { URL } = require('url');
 const EventEmitter = require('events');
 
@@ -92,35 +93,182 @@ class DownloadEngine extends EventEmitter {
   }
 
   /**
-   * Get file size and metadata
+   * Get file size and metadata (follows redirects)
    */
-  async getFileInfo(url) {
+  async getFileInfo(url, maxRedirects = 10) {
     return new Promise((resolve, reject) => {
+      if (maxRedirects <= 0) {
+        reject(new Error('Too many redirects'));
+        return;
+      }
+
       const urlObj = new URL(url);
       const protocol = urlObj.protocol === 'https:' ? https : http;
+      
+      console.log(`📡 getFileInfo (${11 - maxRedirects} redirects): ${url}`);
       
       const options = {
         hostname: urlObj.hostname,
         port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
         path: urlObj.pathname + urlObj.search,
-        method: 'HEAD',
-        timeout: this.timeout
+        method: 'GET', // Use GET instead of HEAD - some servers don't follow redirects with HEAD
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': '*/*',
+          'Range': 'bytes=0-0' // Request only first byte to get headers without downloading full file
+        },
+        timeout: this.timeout,
+        rejectUnauthorized: false
       };
 
       const req = protocol.request(options, (res) => {
-        const info = {
-          totalBytes: parseInt(res.headers['content-length'] || '0', 10),
-          contentType: res.headers['content-type'] || 'application/octet-stream',
-          lastModified: res.headers['last-modified'] || null,
-          acceptsRanges: res.headers['accept-ranges'] === 'bytes',
-          statusCode: res.statusCode
-        };
-        res.destroy();
-        resolve(info);
+        console.log(`📡 getFileInfo: Status ${res.statusCode} for ${url}`);
+        console.log(`   Content-Length: ${res.headers['content-length'] || 'unknown'}`);
+        console.log(`   Content-Type: ${res.headers['content-type'] || 'unknown'}`);
+        console.log(`   Location: ${res.headers.location || 'none'}`);
+        
+        // Handle redirects
+        if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 303 || res.statusCode === 307 || res.statusCode === 308) {
+          const redirectUrl = res.headers.location;
+          if (redirectUrl) {
+            console.log(`🔄 getFileInfo: Following redirect ${res.statusCode} → ${redirectUrl}`);
+            res.destroy();
+            
+            // Build full redirect URL
+            let fullRedirectUrl;
+            if (redirectUrl.startsWith('http://') || redirectUrl.startsWith('https://')) {
+              fullRedirectUrl = redirectUrl;
+            } else if (redirectUrl.startsWith('/')) {
+              fullRedirectUrl = `${urlObj.protocol}//${urlObj.host}${redirectUrl}`;
+            } else {
+              const basePath = urlObj.pathname.substring(0, urlObj.pathname.lastIndexOf('/') + 1);
+              fullRedirectUrl = `${urlObj.protocol}//${urlObj.host}${basePath}${redirectUrl}`;
+            }
+            
+            // Recursively follow redirect
+            this.getFileInfo(fullRedirectUrl, maxRedirects - 1)
+              .then(resolve)
+              .catch(reject);
+            return;
+          }
+        }
+        
+        // Handle 206 Partial Content (Range request)
+        if (res.statusCode === 206) {
+          // For Range requests, Content-Range header has the total size
+          const contentRange = res.headers['content-range'];
+          if (contentRange) {
+            const totalMatch = contentRange.match(/\/(\d+)/);
+            if (totalMatch) {
+              res.headers['content-length'] = totalMatch[1];
+              console.log(`📊 Content-Range indicates total size: ${totalMatch[1]} bytes`);
+            }
+          }
+        }
+
+        // Parse Content-Disposition header for filename
+        let filenameFromHeader = null;
+        const contentDisposition = res.headers['content-disposition'];
+        if (contentDisposition) {
+          console.log('📋 Content-Disposition header:', contentDisposition);
+          
+          // Try multiple patterns to extract filename
+          // Pattern 1: filename="value" or filename=value
+          let filenameMatch = contentDisposition.match(/filename\*?=['"]?([^'";\n]+)['"]?/i);
+          if (!filenameMatch) {
+            // Pattern 2: filename*=UTF-8''value (RFC 5987)
+            filenameMatch = contentDisposition.match(/filename\*=UTF-8''([^'";\n]+)/i);
+          }
+          if (!filenameMatch) {
+            // Pattern 3: filename*=value
+            filenameMatch = contentDisposition.match(/filename\*=([^'";\n]+)/i);
+          }
+          
+          if (filenameMatch && filenameMatch[1]) {
+            filenameFromHeader = filenameMatch[1].trim();
+            // Decode URL-encoded filename
+            try {
+              filenameFromHeader = decodeURIComponent(filenameFromHeader);
+            } catch (e) {
+              // Try unescaping if decodeURIComponent fails
+              try {
+                filenameFromHeader = unescape(filenameFromHeader);
+              } catch (e2) {
+                // Keep original if both fail
+              }
+            }
+            console.log('✅ Extracted filename from Content-Disposition:', filenameFromHeader);
+          }
+        }
+
+        // For GET requests, we need to drain the response body
+        let dataReceived = false;
+        res.on('data', (chunk) => {
+          dataReceived = true;
+          // We only requested 1 byte, so we can ignore it
+        });
+        
+        res.on('end', () => {
+          // If no filename from Content-Disposition, try to get from URL
+          let finalFilename = filenameFromHeader;
+          if (!finalFilename) {
+            try {
+              const finalUrlObj = new URL(url);
+              const pathname = finalUrlObj.pathname;
+              if (pathname && pathname !== '/' && pathname !== '') {
+                const urlFilename = path.basename(pathname);
+                if (urlFilename && urlFilename !== '/' && urlFilename !== '') {
+                  finalFilename = urlFilename;
+                  console.log('📝 Filename from URL path:', finalFilename);
+                }
+              }
+            } catch (e) {
+              // Ignore URL parsing errors
+            }
+          }
+          
+          const info = {
+            totalBytes: parseInt(res.headers['content-length'] || '0', 10),
+            contentType: res.headers['content-type'] || 'application/octet-stream',
+            lastModified: res.headers['last-modified'] || null,
+            acceptsRanges: res.headers['accept-ranges'] === 'bytes',
+            statusCode: res.statusCode,
+            filename: finalFilename,
+            finalUrl: url // Track the final URL after redirects
+          };
+          
+          console.log('📋 File info result:', {
+            filename: finalFilename,
+            size: info.totalBytes,
+            type: info.contentType,
+            finalUrl: url
+          });
+          
+          resolve(info);
+        });
+        
+        res.on('error', (err) => {
+          // Even if there's an error, try to resolve with what we have
+          const info = {
+            totalBytes: parseInt(res.headers['content-length'] || '0', 10),
+            contentType: res.headers['content-type'] || 'application/octet-stream',
+            lastModified: res.headers['last-modified'] || null,
+            acceptsRanges: res.headers['accept-ranges'] === 'bytes',
+            statusCode: res.statusCode,
+            filename: filenameFromHeader,
+            finalUrl: url
+          };
+          resolve(info);
+        });
       });
 
-      req.on('error', reject);
+      req.on('error', (err) => {
+        console.error('❌ getFileInfo request error:', err.message);
+        reject(err);
+      });
+      
       req.on('timeout', () => {
+        console.error('❌ getFileInfo request timeout');
         req.destroy();
         reject(new Error('Request timeout'));
       });
@@ -397,14 +545,32 @@ class DownloadEngine extends EventEmitter {
   }
 
   /**
-   * Single-segment download (fallback)
+   * Single-segment download (fallback) - follows redirects recursively
    */
-  async startSingleSegmentDownload(downloadInfo) {
+  async startSingleSegmentDownload(downloadInfo, maxRedirects = 10) {
+    if (maxRedirects <= 0) {
+      downloadInfo.status = 'error';
+      downloadInfo.error = 'Too many redirects';
+      this.emit('error', { downloadId: downloadInfo.id, error: 'Too many redirects' });
+      return;
+    }
+
     const downloadId = downloadInfo.id;
     const urlObj = new URL(downloadInfo.url);
     const protocol = urlObj.protocol === 'https:' ? https : http;
     
-    console.log('📁 Creating file stream:', downloadInfo.filePath);
+    console.log(`📁 Download attempt (${11 - maxRedirects} redirects followed): ${downloadInfo.url}`);
+    
+    // Delete old file if we're following a redirect (not the first attempt)
+    if (maxRedirects < 10 && fs.existsSync(downloadInfo.filePath)) {
+      try {
+        fs.unlinkSync(downloadInfo.filePath);
+        console.log('🗑️ Deleted old file from previous redirect');
+      } catch (e) {
+        console.warn('Could not delete old file:', e.message);
+      }
+    }
+    
     const fileStream = fs.createWriteStream(downloadInfo.filePath, { flags: 'w' });
     
     fileStream.on('error', (err) => {
@@ -424,25 +590,121 @@ class DownloadEngine extends EventEmitter {
       path: urlObj.pathname + urlObj.search,
       method: 'GET',
       headers: {
-        'User-Agent': 'CDM/1.0',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'identity', // Don't use compression
         ...(downloadInfo.receivedBytes > 0 ? {
           'Range': `bytes=${downloadInfo.receivedBytes}-`
         } : {})
       },
-      timeout: this.timeout
+      timeout: this.timeout,
+      rejectUnauthorized: false
     };
     
-    console.log('🔧 Request options:', JSON.stringify(options, null, 2));
+    console.log(`🔧 Request to: ${urlObj.hostname}${urlObj.pathname}${urlObj.search}`);
 
     const req = protocol.request(options, (res) => {
-      console.log('📥 HTTP Response received!');
-      console.log('   Status:', res.statusCode);
-      console.log('   Headers:', JSON.stringify(res.headers, null, 2));
+      console.log(`📥 HTTP ${res.statusCode} from ${urlObj.hostname}`);
+      console.log(`   Content-Length: ${res.headers['content-length'] || 'unknown'}`);
+      console.log(`   Location: ${res.headers.location || 'none'}`);
+      
+      // Handle redirects - follow ALL redirects in the chain
+      if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 303 || res.statusCode === 307 || res.statusCode === 308) {
+        const redirectUrl = res.headers.location;
+        if (redirectUrl) {
+          console.log(`🔄 Redirect ${res.statusCode} → ${redirectUrl}`);
+          fileStream.close();
+          
+          // Check for filename in Content-Disposition (some redirects include it)
+          const contentDisposition = res.headers['content-disposition'];
+          if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            if (filenameMatch && filenameMatch[1]) {
+              let headerFilename = filenameMatch[1].replace(/['"]/g, '').trim();
+              try {
+                headerFilename = decodeURIComponent(headerFilename);
+              } catch (e) {
+                // Keep original if decode fails
+              }
+              
+              if (headerFilename) {
+                const downloadsDir = path.dirname(downloadInfo.filePath);
+                let newFilePath = path.join(downloadsDir, headerFilename);
+                
+                // Ensure unique filename
+                const ext = path.extname(headerFilename);
+                const name = path.basename(headerFilename, ext);
+                let counter = 1;
+                while (fs.existsSync(newFilePath)) {
+                  newFilePath = path.join(downloadsDir, `${name} (${counter})${ext}`);
+                  counter++;
+                }
+                
+                downloadInfo.filename = path.basename(newFilePath);
+                downloadInfo.filePath = newFilePath;
+                console.log('📝 Filename updated from redirect Content-Disposition:', downloadInfo.filename);
+              }
+            }
+          }
+          
+          // Build full redirect URL
+          let fullRedirectUrl;
+          if (redirectUrl.startsWith('http://') || redirectUrl.startsWith('https://')) {
+            fullRedirectUrl = redirectUrl;
+          } else if (redirectUrl.startsWith('/')) {
+            fullRedirectUrl = `${urlObj.protocol}//${urlObj.host}${redirectUrl}`;
+          } else {
+            const basePath = urlObj.pathname.substring(0, urlObj.pathname.lastIndexOf('/') + 1);
+            fullRedirectUrl = `${urlObj.protocol}//${urlObj.host}${basePath}${redirectUrl}`;
+          }
+          
+          console.log(`🔄 Following redirect to: ${fullRedirectUrl}`);
+          
+          // Reset progress for new redirect
+          downloadInfo.url = fullRedirectUrl;
+          downloadInfo.receivedBytes = 0;
+          
+          // Recursively follow redirect
+          setTimeout(() => {
+            this.startSingleSegmentDownload(downloadInfo, maxRedirects - 1)
+              .catch(err => {
+                console.error('Error following redirect:', err);
+                downloadInfo.status = 'error';
+                downloadInfo.error = err.message;
+                this.emit('error', { downloadId: downloadInfo.id, error: err.message });
+              });
+          }, 100);
+          return;
+        }
+      }
       
       if (res.statusCode === 200 || res.statusCode === 206) {
         if (res.statusCode === 200) {
           downloadInfo.totalBytes = parseInt(res.headers['content-length'] || '0', 10);
           console.log('File size:', downloadInfo.totalBytes, 'bytes');
+          
+          // Update filename from Content-Disposition header if available
+          // This happens on the final response (not a redirect)
+          const contentDisposition = res.headers['content-disposition'];
+          if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            if (filenameMatch && filenameMatch[1]) {
+              let headerFilename = filenameMatch[1].replace(/['"]/g, '').trim();
+              try {
+                headerFilename = decodeURIComponent(headerFilename);
+              } catch (e) {
+                // Keep original if decode fails
+              }
+              
+              if (headerFilename && path.basename(downloadInfo.filePath) !== headerFilename) {
+                console.log('📝 Content-Disposition filename detected:', headerFilename);
+                console.log('⚠️ Note: Filename will be updated after download completes');
+                // Store the correct filename - we'll rename the file after download completes
+                downloadInfo.correctFilename = headerFilename;
+              }
+            }
+          }
         }
 
         let chunkCount = 0;
@@ -488,11 +750,36 @@ class DownloadEngine extends EventEmitter {
           console.log('✅ Response ended. Total chunks:', chunkCount);
           fileStream.end(() => {
             console.log('✅ File stream closed');
+            
+            // Rename file if we have a correct filename from Content-Disposition
+            if (downloadInfo.correctFilename && path.basename(downloadInfo.filePath) !== downloadInfo.correctFilename) {
+              const downloadsDir = path.dirname(downloadInfo.filePath);
+              let newFilePath = path.join(downloadsDir, downloadInfo.correctFilename);
+              
+              // Ensure unique filename
+              const ext = path.extname(downloadInfo.correctFilename);
+              const name = path.basename(downloadInfo.correctFilename, ext);
+              let counter = 1;
+              while (fs.existsSync(newFilePath)) {
+                newFilePath = path.join(downloadsDir, `${name} (${counter})${ext}`);
+                counter++;
+              }
+              
+              try {
+                fs.renameSync(downloadInfo.filePath, newFilePath);
+                downloadInfo.filePath = newFilePath;
+                downloadInfo.filename = path.basename(newFilePath);
+                console.log('✅ File renamed to:', downloadInfo.filename);
+              } catch (err) {
+                console.error('❌ Could not rename file:', err.message);
+              }
+            }
+            
+            downloadInfo.status = 'completed';
+            downloadInfo.progress = 100;
+            this.emit('completed', { downloadId });
+            this.activeDownloads.delete(downloadId);
           });
-          downloadInfo.status = 'completed';
-          downloadInfo.progress = 100;
-          this.emit('completed', { downloadId });
-          this.activeDownloads.delete(downloadId);
         });
 
         res.on('error', (error) => {
@@ -502,6 +789,8 @@ class DownloadEngine extends EventEmitter {
           this.emit('error', { downloadId, error: error.message });
         });
       } else {
+        console.error('❌ Unexpected HTTP status:', res.statusCode);
+        fileStream.close();
         downloadInfo.status = 'error';
         downloadInfo.error = `HTTP ${res.statusCode}`;
         this.emit('error', { downloadId, error: `HTTP ${res.statusCode}` });

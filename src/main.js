@@ -51,11 +51,32 @@ function initialize() {
     maxConcurrent: settings.maxConcurrent || 3
   });
   
+  // Helper function to serialize download info for IPC
+  function serializeDownloadInfo(downloadInfo) {
+    return {
+      id: downloadInfo.id,
+      url: downloadInfo.url,
+      filename: downloadInfo.filename,
+      filePath: downloadInfo.filePath,
+      status: downloadInfo.status,
+      progress: downloadInfo.progress,
+      totalBytes: downloadInfo.totalBytes,
+      receivedBytes: downloadInfo.receivedBytes,
+      speed: downloadInfo.speed,
+      startTime: downloadInfo.startTime,
+      endTime: downloadInfo.endTime,
+      error: downloadInfo.error,
+      priority: downloadInfo.priority,
+      queuePosition: downloadInfo.queuePosition,
+      contentType: downloadInfo.contentType
+    };
+  }
+
   // Setup engine event handlers
   downloadEngine.on('progress', (downloadInfo) => {
     downloads.set(downloadInfo.id, downloadInfo);
     if (mainWindow) {
-      mainWindow.webContents.send('download:update', downloadInfo);
+      mainWindow.webContents.send('download:update', serializeDownloadInfo(downloadInfo));
     }
     // Auto-save every 5 seconds
     if (Date.now() % 5000 < 100) {
@@ -72,12 +93,44 @@ function initialize() {
       downloads.set(downloadId, downloadInfo);
       downloadQueue.moveToCompleted(downloadId);
       
-      // Add to history
-      persistence.addToHistory(downloadInfo);
+      // Add to history (serialize first to avoid circular refs)
+      try {
+        persistence.addHistoryEntry(serializeDownloadInfo(downloadInfo));
+      } catch (err) {
+        console.error('Error adding to history:', err.message);
+      }
       
       if (mainWindow) {
-        mainWindow.webContents.send('download:update', downloadInfo);
+        mainWindow.webContents.send('download:update', serializeDownloadInfo(downloadInfo));
       }
+      
+      // Save state
+      persistence.saveDownloads(downloads);
+    }
+  });
+  
+  downloadEngine.on('completed', ({ downloadId }) => {
+    const downloadInfo = downloads.get(downloadId);
+    if (downloadInfo) {
+      downloadInfo.status = 'completed';
+      downloadInfo.endTime = Date.now();
+      downloadInfo.progress = 100;
+      downloads.set(downloadId, downloadInfo);
+      
+      // Add to history (serialize first to avoid circular refs)
+      try {
+        persistence.addHistoryEntry(serializeDownloadInfo(downloadInfo));
+      } catch (err) {
+        console.error('Error adding to history:', err.message);
+      }
+      
+      // Notify UI
+      if (mainWindow) {
+        mainWindow.webContents.send('download:update', serializeDownloadInfo(downloadInfo));
+      }
+      
+      // Move to completed in queue
+      downloadQueue.moveToCompleted(downloadId);
       
       // Save state
       persistence.saveDownloads(downloads);
@@ -92,7 +145,7 @@ function initialize() {
       downloads.set(downloadId, downloadInfo);
       
       if (mainWindow) {
-        mainWindow.webContents.send('download:update', downloadInfo);
+        mainWindow.webContents.send('download:update', serializeDownloadInfo(downloadInfo));
       }
       
       persistence.saveDownloads(downloads);
@@ -103,7 +156,7 @@ function initialize() {
     const downloadInfo = downloads.get(downloadId);
     if (downloadInfo) {
       if (mainWindow) {
-        mainWindow.webContents.send('download:update', downloadInfo);
+        mainWindow.webContents.send('download:update', serializeDownloadInfo(downloadInfo));
       }
       persistence.saveDownloads(downloads);
     }
@@ -113,7 +166,7 @@ function initialize() {
     const downloadInfo = downloads.get(downloadId);
     if (downloadInfo) {
       if (mainWindow) {
-        mainWindow.webContents.send('download:update', downloadInfo);
+        mainWindow.webContents.send('download:update', serializeDownloadInfo(downloadInfo));
       }
     }
   });
@@ -131,7 +184,7 @@ function initialize() {
       downloads.set(downloadInfo.id, downloadInfo);
       
       if (mainWindow) {
-        mainWindow.webContents.send('download:update', downloadInfo);
+        mainWindow.webContents.send('download:update', serializeDownloadInfo(downloadInfo));
       }
       
       // Get file info if not already available
@@ -154,7 +207,7 @@ function initialize() {
       await downloadEngine.startDownload(downloadInfo);
       
       if (mainWindow) {
-        mainWindow.webContents.send('download:update', downloadInfo);
+        mainWindow.webContents.send('download:update', serializeDownloadInfo(downloadInfo));
       }
       
       if (isDev) console.log('✓ Download started successfully');
@@ -169,7 +222,7 @@ function initialize() {
       downloadQueue.moveToCompleted(downloadInfo.id);
       
       if (mainWindow) {
-        mainWindow.webContents.send('download:update', downloadInfo);
+        mainWindow.webContents.send('download:update', serializeDownloadInfo(downloadInfo));
       }
     }
   });
@@ -262,13 +315,24 @@ app.on('before-quit', () => {
 });
 
   // IPC Handlers
+  ipcMain.handle('download:get-file-info', async (event, url) => {
+    try {
+      console.log('📡 Getting file info for:', url);
+      const fileInfo = await downloadEngine.getFileInfo(url);
+      return fileInfo;
+    } catch (error) {
+      console.error('Error getting file info:', error);
+      throw error;
+    }
+  });
+
   ipcMain.handle('download:add', async (event, url, options = {}) => {
     console.log('\n========================================');
     console.log('📨 IPC HANDLER: download:add called');
     console.log('   URL:', url);
     console.log('   Options:', JSON.stringify(options));
     console.log('========================================\n');
-  try {
+    try {
     const downloadId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const urlObj = new URL(url);
     
@@ -276,17 +340,21 @@ app.on('before-quit', () => {
     let filename = options.filename;
     if (!filename) {
       // Try to get filename from URL
-      filename = path.basename(urlObj.pathname) || 'download';
-      // If no extension, try to get from Content-Disposition header
-      if (!path.extname(filename)) {
-        try {
-          const fileInfo = await downloadEngine.getFileInfo(url);
-          // Could parse Content-Disposition here if needed
-        } catch (e) {
-          // Ignore
+      filename = path.basename(urlObj.pathname);
+      
+      // If no filename in path, try query params
+      if (!filename || filename === '' || filename === '/') {
+        const product = urlObj.searchParams.get('product');
+        if (product) {
+          filename = product;
+        } else {
+          filename = 'download';
         }
       }
     }
+    
+    // Get download directory - use custom path if provided
+    const downloadsDir = options.downloadPath || settings.downloadPath;
     
     // Ensure unique filename
     let filePath = path.join(downloadsDir, filename);

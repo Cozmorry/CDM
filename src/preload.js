@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   downloadMoveUp: (id) => ipcRenderer.invoke('download:move-up', id),
   downloadMoveDown: (id) => ipcRenderer.invoke('download:move-down', id),
   downloadGetStats: () => ipcRenderer.invoke('download:get-stats'),
+  getFileInfo: (url) => ipcRenderer.invoke('download:get-file-info', url),
   
   // Download events
   onDownloadUpdate: (callback) => {
