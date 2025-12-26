@@ -173,9 +173,9 @@ function initialize() {
   
   // Setup queue event handlers
   downloadQueue.on('start', async (downloadInfo) => {
-    console.log('🎯 START EVENT RECEIVED! Download ID:', downloadInfo.id);
+    console.log('[Queue] START EVENT RECEIVED! Download ID:', downloadInfo.id);
     const isDev = process.argv.includes('--dev');
-    console.log('🚀 Starting download:', downloadInfo.filename, 'from', downloadInfo.url);
+    console.log('[Queue] Starting download:', downloadInfo.filename, 'from', downloadInfo.url);
     
     try {
       // Update status immediately
@@ -190,7 +190,7 @@ function initialize() {
       // Get file info if not already available
       if (!downloadInfo.totalBytes || downloadInfo.totalBytes === 0) {
         try {
-          if (isDev) console.log('📡 Getting file info for:', downloadInfo.url);
+          if (isDev) console.log('[Queue] Getting file info for:', downloadInfo.url);
           const fileInfo = await downloadEngine.getFileInfo(downloadInfo.url);
           downloadInfo.totalBytes = fileInfo.totalBytes;
           downloadInfo.contentType = fileInfo.contentType;
@@ -201,7 +201,7 @@ function initialize() {
               (downloadInfo.filename === 'download' || 
                !downloadInfo.filename || 
                !path.extname(downloadInfo.filename))) {
-            console.log('📝 Updating filename from fileInfo:', fileInfo.filename);
+            console.log('[Queue] Updating filename from fileInfo:', fileInfo.filename);
             const downloadsDir = path.dirname(downloadInfo.filePath);
             let newFilePath = path.join(downloadsDir, fileInfo.filename);
             
@@ -216,19 +216,19 @@ function initialize() {
             
             downloadInfo.filename = path.basename(newFilePath);
             downloadInfo.filePath = newFilePath;
-            console.log('✅ Filename updated to:', downloadInfo.filename);
+            console.log('[Queue] Filename updated to:', downloadInfo.filename);
           }
           
           downloads.set(downloadInfo.id, downloadInfo);
           if (isDev) console.log('✓ File info:', fileInfo.totalBytes, 'bytes');
         } catch (infoError) {
-          console.warn('⚠ Could not get file info:', infoError.message);
+          console.warn('[Queue] Could not get file info:', infoError.message);
           // Continue anyway - download engine will handle it
         }
       }
       
       // Start download
-      if (isDev) console.log('⬇️ Starting download engine...');
+      if (isDev) console.log('[Queue] Starting download engine...');
       await downloadEngine.startDownload(downloadInfo);
       
       if (mainWindow) {
@@ -237,7 +237,7 @@ function initialize() {
       
       if (isDev) console.log('✓ Download started successfully');
     } catch (error) {
-      console.error('❌ Download start error:', error);
+      console.error('[Queue] Download start error:', error);
       if (isDev) {
         console.error('Error details:', error.stack);
       }
@@ -281,18 +281,21 @@ function loadSavedDownloads() {
 }
 
 function createWindow() {
+  const iconPath = path.join(__dirname, '..', 'assets', 'icon.png');
+  const iconExists = fs.existsSync(iconPath);
+  
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1000,
     minHeight: 700,
+    icon: iconExists ? iconPath : undefined,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js')
     },
-    titleBarStyle: 'default',
-    // icon: path.join(__dirname, '../assets/icon.png')
+    titleBarStyle: 'default'
   });
 
   mainWindow.loadFile('src/index.html');
@@ -342,7 +345,7 @@ app.on('before-quit', () => {
   // IPC Handlers
   ipcMain.handle('download:get-file-info', async (event, url) => {
     try {
-      console.log('📡 Getting file info for:', url);
+      console.log('[IPC] Getting file info for:', url);
       const fileInfo = await downloadEngine.getFileInfo(url);
       return fileInfo;
     } catch (error) {
@@ -409,12 +412,12 @@ app.on('before-quit', () => {
 
     downloads.set(downloadId, downloadInfo);
     
-    console.log('📥 IPC: Adding download to queue. ID:', downloadId, 'URL:', url);
+    console.log('[IPC] Adding download to queue. ID:', downloadId, 'URL:', url);
     
     // Add to queue
     downloadQueue.add(downloadInfo, options.priority || 'normal');
     
-    console.log('✅ IPC: Download added. Queue state:', {
+    console.log('[IPC] Download added. Queue state:', {
       queue: downloadQueue.getAll().queue.length,
       active: downloadQueue.getAll().active.length
     });

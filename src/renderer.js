@@ -7,6 +7,22 @@ let downloads = {
 let currentTab = 'active';
 let settings = {};
 
+// Icon helper - using react-icons style (Feather Icons)
+// Note: In a browser context, we'll use the pre-defined SVG strings
+// These match the react-icons/fi (Feather Icons) style
+const icons = {
+  settings: `<svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
+  plus: `<svg class="icon icon-inline" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
+  pause: `<svg class="icon icon-inline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`,
+  play: `<svg class="icon icon-inline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`,
+  cancel: `<svg class="icon icon-inline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+  open: `<svg class="icon icon-inline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`,
+  folder: `<svg class="icon icon-inline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
+  priority: `<svg class="icon icon-inline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`,
+  up: `<svg class="icon icon-inline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>`,
+  down: `<svg class="icon icon-inline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>`
+};
+
 // DOM Elements
 const addDownloadBtn = document.getElementById('addDownloadBtn');
 const settingsBtn = document.getElementById('settingsBtn');
@@ -109,9 +125,9 @@ getFileInfoBtn.addEventListener('click', async () => {
     let fileInfo;
     try {
       fileInfo = await window.electronAPI.getFileInfo(url);
-      console.log('✅ File info received:', fileInfo);
+      console.log('[INFO] File info received:', fileInfo);
     } catch (error) {
-      console.error('❌ Error getting file info:', error);
+      console.error('[ERROR] Error getting file info:', error);
       // Create a fallback fileInfo object
       fileInfo = {
         totalBytes: 0,
@@ -134,7 +150,7 @@ getFileInfoBtn.addEventListener('click', async () => {
         (fileInfo.contentType?.includes('application') || fileInfo.filename?.toLowerCase().includes('stub'))) {
       const warningEl = document.createElement('div');
       warningEl.style.cssText = 'margin-top: 0.5rem; padding: 0.5rem; background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 4px; color: #ffc107; font-size: 0.85rem;';
-      warningEl.textContent = '⚠️ This appears to be a stub installer (small downloader). It will download the full application when run.';
+      warningEl.textContent = 'Warning: This appears to be a stub installer (small downloader). It will download the full application when run.';
       fileInfoDisplay.appendChild(warningEl);
     }
     
@@ -143,7 +159,7 @@ getFileInfoBtn.addEventListener('click', async () => {
       if (fileInfo.filename) {
         // Use filename from Content-Disposition header or URL
         downloadFilenameInput.value = fileInfo.filename;
-        console.log('✅ Using filename from fileInfo:', fileInfo.filename);
+        console.log('[INFO] Using filename from fileInfo:', fileInfo.filename);
       } else {
         // Try to get from final URL (after redirects)
         try {
@@ -169,10 +185,10 @@ getFileInfoBtn.addEventListener('click', async () => {
           }
           
           downloadFilenameInput.value = suggestedName || 'download';
-          console.log('📝 Using suggested filename from URL:', suggestedName);
+          console.log('[INFO] Using suggested filename from URL:', suggestedName);
         } catch (e) {
           downloadFilenameInput.value = 'download';
-          console.log('⚠️ Using default filename: download');
+          console.log('[WARN] Using default filename: download');
         }
       }
     }
@@ -226,7 +242,7 @@ browseDownloadPathBtn.addEventListener('click', async () => {
 
 // Step 2: Start download
 startDownloadBtn.addEventListener('click', async () => {
-  console.log('🖱️ Start Download button clicked');
+  console.log('[INFO] Start Download button clicked');
   
   const url = downloadUrlInput.value.trim();
   const filename = downloadFilenameInput.value.trim();
@@ -238,7 +254,7 @@ startDownloadBtn.addEventListener('click', async () => {
     return;
   }
   
-  console.log('📤 Calling electronAPI.downloadAdd with:', { url, filename, priority, downloadPath });
+  console.log('[INFO] Calling electronAPI.downloadAdd with:', { url, filename, priority, downloadPath });
   
   try {
     // Save the download path to settings if it was manually entered or changed
@@ -247,7 +263,7 @@ startDownloadBtn.addEventListener('click', async () => {
     }
     
     const result = await window.electronAPI.downloadAdd(url, { filename, priority, downloadPath });
-    console.log('📥 Got result from main process:', result);
+    console.log('[INFO] Got result from main process:', result);
     
     if (result.success) {
       closeModalHandler();
@@ -256,7 +272,7 @@ startDownloadBtn.addEventListener('click', async () => {
       alert(`Error: ${result.error}`);
     }
   } catch (error) {
-    console.error('❌ Error calling downloadAdd:', error);
+    console.error('[ERROR] Error calling downloadAdd:', error);
     alert('Error adding download: ' + error.message);
   }
 });
@@ -394,21 +410,21 @@ function createDownloadItem(download) {
     ` : ''}
     <div class="download-actions">
       ${download.status === 'downloading' ? `
-        <button class="btn-icon" onclick="pauseDownload('${download.id}')">⏸ Pause</button>
+        <button class="btn-icon" onclick="pauseDownload('${download.id}')">${icons.pause} Pause</button>
       ` : download.status === 'paused' ? `
-        <button class="btn-icon" onclick="resumeDownload('${download.id}')">▶ Resume</button>
+        <button class="btn-icon" onclick="resumeDownload('${download.id}')">${icons.play} Resume</button>
       ` : ''}
       ${download.status === 'pending' || download.queuePosition ? `
-        <button class="btn-icon" onclick="changePriority('${download.id}')">⚡ Priority</button>
-        <button class="btn-icon" onclick="moveUp('${download.id}')">↑ Up</button>
-        <button class="btn-icon" onclick="moveDown('${download.id}')">↓ Down</button>
+        <button class="btn-icon" onclick="changePriority('${download.id}')">${icons.priority} Priority</button>
+        <button class="btn-icon" onclick="moveUp('${download.id}')">${icons.up} Up</button>
+        <button class="btn-icon" onclick="moveDown('${download.id}')">${icons.down} Down</button>
       ` : ''}
       ${download.status === 'completed' ? `
-        <button class="btn-icon" onclick="openDownload('${download.id}')">📂 Open</button>
-        <button class="btn-icon" onclick="openDownloadFolder('${download.id}')">📁 Show in Folder</button>
+        <button class="btn-icon" onclick="openDownload('${download.id}')">${icons.open} Open</button>
+        <button class="btn-icon" onclick="openDownloadFolder('${download.id}')">${icons.folder} Show in Folder</button>
       ` : ''}
       ${download.status !== 'completed' ? `
-        <button class="btn-icon" onclick="cancelDownload('${download.id}')">❌ Cancel</button>
+        <button class="btn-icon" onclick="cancelDownload('${download.id}')">${icons.cancel} Cancel</button>
       ` : ''}
     </div>
   `;
@@ -644,6 +660,27 @@ window.electronAPI.downloadGetAll().then((all) => {
 window.electronAPI.settingsGet().then((loadedSettings) => {
   settings = loadedSettings;
 });
+
+// Initialize icons in buttons
+function initializeIcons() {
+  const settingsBtn = document.getElementById('settingsBtn');
+  const addDownloadBtn = document.getElementById('addDownloadBtn');
+  
+  if (settingsBtn) {
+    settingsBtn.innerHTML = icons.settings;
+  }
+  
+  if (addDownloadBtn) {
+    addDownloadBtn.innerHTML = icons.plus + ' Add Download';
+  }
+}
+
+// Initialize icons when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeIcons);
+} else {
+  initializeIcons();
+}
 
 // Auto-refresh stats every second
 setInterval(updateStats, 1000);

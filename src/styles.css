@@ -43,10 +43,23 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.app-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
 .app-header h1 {
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--text-primary);
+  margin: 0;
 }
 
 .header-actions {
@@ -59,16 +72,30 @@ body {
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   color: var(--text-primary);
-  padding: 0.5rem 1rem;
+  padding: 0.5rem;
   border-radius: 8px;
-  font-size: 1.2rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
 }
 
 .btn-icon-header:hover {
   background: var(--bg-secondary);
   border-color: var(--accent);
+}
+
+.icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.icon-inline {
+  margin-right: 0.5rem;
 }
 
 .btn-primary {
@@ -81,12 +108,21 @@ body {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .btn-primary:hover {
   background: var(--accent-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(233, 69, 96, 0.3);
+}
+
+.btn-primary .icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .btn-secondary {
@@ -346,11 +382,20 @@ body {
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .btn-icon:hover {
   background: var(--bg-secondary);
   border-color: var(--accent);
+}
+
+.btn-icon .icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .btn-icon:disabled {

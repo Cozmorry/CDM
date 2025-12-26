@@ -54,20 +54,20 @@ class DownloadQueue extends EventEmitter {
    * Process queue - start downloads if slots available
    */
   processQueue() {
-    console.log('🔄 Processing queue. Active:', this.active.size, 'Max:', this.maxConcurrent, 'Queued:', this.queue.length);
+    console.log('[Queue] Processing queue. Active:', this.active.size, 'Max:', this.maxConcurrent, 'Queued:', this.queue.length);
     
     while (this.active.size < this.maxConcurrent && this.queue.length > 0) {
       const downloadInfo = this.queue.shift();
-      console.log('📋 Processing download from queue:', downloadInfo.id, downloadInfo.filename);
+      console.log('[Queue] Processing download from queue:', downloadInfo.id, downloadInfo.filename);
       
       if (downloadInfo && !downloadInfo.paused) {
         this.active.set(downloadInfo.id, downloadInfo);
         downloadInfo.queuePosition = 0;
         downloadInfo.status = 'downloading';
-        console.log('✅ Emitting start event for:', downloadInfo.id);
+        console.log('[Queue] Emitting start event for:', downloadInfo.id);
         this.emit('start', downloadInfo);
       } else {
-        console.log('⚠️ Skipping download (paused or invalid):', downloadInfo?.paused);
+        console.log('[Queue] Skipping download (paused or invalid):', downloadInfo?.paused);
       }
     }
     

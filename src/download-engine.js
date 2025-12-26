@@ -22,7 +22,7 @@ class DownloadEngine extends EventEmitter {
    */
   async startDownload(downloadInfo) {
     const downloadId = downloadInfo.id;
-    console.log('🔧 DownloadEngine.startDownload called for:', downloadId);
+    console.log('[DownloadEngine] startDownload called for:', downloadId);
     console.log('   URL:', downloadInfo.url);
     console.log('   FilePath:', downloadInfo.filePath);
     
@@ -47,11 +47,11 @@ class DownloadEngine extends EventEmitter {
       
       if (supportsRanges) {
         // Multi-segment download for faster speeds
-        console.log(`🚀 Using multi-segment download (${Math.min(this.maxSegments, Math.max(1, Math.floor(downloadInfo.totalBytes / this.minSegmentSize)))} segments)`);
+        console.log(`[DownloadEngine] Using multi-segment download (${Math.min(this.maxSegments, Math.max(1, Math.floor(downloadInfo.totalBytes / this.minSegmentSize)))} segments)`);
         return this.startMultiSegmentDownload(downloadInfo);
       } else {
         // Single-segment download (fallback)
-        console.log('📥 Using single-segment download (range requests not supported or file too small)');
+        console.log('[DownloadEngine] Using single-segment download (range requests not supported or file too small)');
         return this.startSingleSegmentDownload(downloadInfo);
       }
     } catch (error) {
@@ -107,7 +107,7 @@ class DownloadEngine extends EventEmitter {
       const urlObj = new URL(url);
       const protocol = urlObj.protocol === 'https:' ? https : http;
       
-      console.log(`📡 getFileInfo (${11 - maxRedirects} redirects): ${url}`);
+      console.log(`[getFileInfo] Attempt ${11 - maxRedirects} (${url})`);
       
       const options = {
         hostname: urlObj.hostname,
@@ -124,7 +124,7 @@ class DownloadEngine extends EventEmitter {
       };
 
       const req = protocol.request(options, (res) => {
-        console.log(`📡 getFileInfo: Status ${res.statusCode} for ${url}`);
+        console.log(`[getFileInfo] Status ${res.statusCode} for ${url}`);
         console.log(`   Content-Length: ${res.headers['content-length'] || 'unknown'}`);
         console.log(`   Content-Type: ${res.headers['content-type'] || 'unknown'}`);
         console.log(`   Location: ${res.headers.location || 'none'}`);
@@ -133,7 +133,7 @@ class DownloadEngine extends EventEmitter {
         if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 303 || res.statusCode === 307 || res.statusCode === 308) {
           const redirectUrl = res.headers.location;
           if (redirectUrl) {
-            console.log(`🔄 getFileInfo: Following redirect ${res.statusCode} → ${redirectUrl}`);
+            console.log(`[getFileInfo] Following redirect ${res.statusCode} -> ${redirectUrl}`);
             res.destroy();
             
             // Build full redirect URL
@@ -163,7 +163,7 @@ class DownloadEngine extends EventEmitter {
             const totalMatch = contentRange.match(/\/(\d+)/);
             if (totalMatch) {
               res.headers['content-length'] = totalMatch[1];
-              console.log(`📊 Content-Range indicates total size: ${totalMatch[1]} bytes`);
+              console.log(`[getFileInfo] Content-Range indicates total size: ${totalMatch[1]} bytes`);
             }
           }
         }
@@ -172,7 +172,7 @@ class DownloadEngine extends EventEmitter {
         let filenameFromHeader = null;
         const contentDisposition = res.headers['content-disposition'];
         if (contentDisposition) {
-          console.log('📋 Content-Disposition header:', contentDisposition);
+          console.log('[getFileInfo] Content-Disposition header:', contentDisposition);
           
           // Try multiple patterns to extract filename
           // Pattern 1: filename="value" or filename=value
@@ -199,7 +199,7 @@ class DownloadEngine extends EventEmitter {
                 // Keep original if both fail
               }
             }
-            console.log('✅ Extracted filename from Content-Disposition:', filenameFromHeader);
+            console.log('[getFileInfo] Extracted filename from Content-Disposition:', filenameFromHeader);
           }
         }
 
@@ -225,10 +225,10 @@ class DownloadEngine extends EventEmitter {
                     urlFilename = decodeURIComponent(urlFilename);
                   } catch (e) {
                     // If decoding fails, try with the original
-                    console.log('⚠️ Could not decode URL filename, using as-is');
+                    console.log('[getFileInfo] Could not decode URL filename, using as-is');
                   }
                   finalFilename = urlFilename;
-                  console.log('📝 Filename from URL path:', finalFilename);
+                  console.log('[getFileInfo] Filename from URL path:', finalFilename);
                 }
               }
             } catch (e) {
@@ -240,7 +240,7 @@ class DownloadEngine extends EventEmitter {
           if (finalFilename && finalFilename.includes('%')) {
             try {
               finalFilename = decodeURIComponent(finalFilename);
-              console.log('🔓 Decoded URL-encoded filename:', finalFilename);
+              console.log('[getFileInfo] Decoded URL-encoded filename:', finalFilename);
             } catch (e) {
               // Keep original if decoding fails
             }
@@ -260,7 +260,7 @@ class DownloadEngine extends EventEmitter {
             finalUrl: url // Track the final URL after redirects
           };
           
-          console.log('📋 File info result:', {
+          console.log('[getFileInfo] File info result:', {
             filename: finalFilename,
             size: info.totalBytes,
             type: info.contentType,
@@ -287,12 +287,12 @@ class DownloadEngine extends EventEmitter {
       });
 
       req.on('error', (err) => {
-        console.error('❌ getFileInfo request error:', err.message);
+        console.error('[getFileInfo] Request error:', err.message);
         reject(err);
       });
       
       req.on('timeout', () => {
-        console.error('❌ getFileInfo request timeout');
+        console.error('[getFileInfo] Request timeout');
         req.destroy();
         reject(new Error('Request timeout'));
       });
@@ -626,13 +626,13 @@ class DownloadEngine extends EventEmitter {
     const urlObj = new URL(downloadInfo.url);
     const protocol = urlObj.protocol === 'https:' ? https : http;
     
-    console.log(`📁 Download attempt (${11 - maxRedirects} redirects followed): ${downloadInfo.url}`);
+    console.log(`[Download] Attempt ${11 - maxRedirects} (${downloadInfo.url})`);
     
     // Delete old file if we're following a redirect (not the first attempt)
     if (maxRedirects < 10 && fs.existsSync(downloadInfo.filePath)) {
       try {
         fs.unlinkSync(downloadInfo.filePath);
-        console.log('🗑️ Deleted old file from previous redirect');
+        console.log('[Download] Deleted old file from previous redirect');
       } catch (e) {
         console.warn('Could not delete old file:', e.message);
       }
@@ -641,11 +641,11 @@ class DownloadEngine extends EventEmitter {
     const fileStream = fs.createWriteStream(downloadInfo.filePath, { flags: 'w' });
     
     fileStream.on('error', (err) => {
-      console.error('❌ File stream error:', err);
+      console.error('[Download] File stream error:', err);
     });
     
     fileStream.on('open', () => {
-      console.log('✅ File stream opened');
+      console.log('[Download] File stream opened');
     });
     
     let lastUpdate = Date.now();
@@ -669,10 +669,10 @@ class DownloadEngine extends EventEmitter {
       rejectUnauthorized: false
     };
     
-    console.log(`🔧 Request to: ${urlObj.hostname}${urlObj.pathname}${urlObj.search}`);
+    console.log(`[Download] Request to: ${urlObj.hostname}${urlObj.pathname}${urlObj.search}`);
 
     const req = protocol.request(options, (res) => {
-      console.log(`📥 HTTP ${res.statusCode} from ${urlObj.hostname}`);
+      console.log(`[Download] HTTP ${res.statusCode} from ${urlObj.hostname}`);
       console.log(`   Content-Length: ${res.headers['content-length'] || 'unknown'}`);
       console.log(`   Location: ${res.headers.location || 'none'}`);
       
@@ -680,7 +680,7 @@ class DownloadEngine extends EventEmitter {
       if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 303 || res.statusCode === 307 || res.statusCode === 308) {
         const redirectUrl = res.headers.location;
         if (redirectUrl) {
-          console.log(`🔄 Redirect ${res.statusCode} → ${redirectUrl}`);
+          console.log(`[Download] Redirect ${res.statusCode} -> ${redirectUrl}`);
           fileStream.close();
           
           // Check for filename in Content-Disposition (some redirects include it)
@@ -710,7 +710,7 @@ class DownloadEngine extends EventEmitter {
                 
                 downloadInfo.filename = path.basename(newFilePath);
                 downloadInfo.filePath = newFilePath;
-                console.log('📝 Filename updated from redirect Content-Disposition:', downloadInfo.filename);
+                console.log('[Download] Filename updated from redirect Content-Disposition:', downloadInfo.filename);
               }
             }
           }
@@ -726,7 +726,7 @@ class DownloadEngine extends EventEmitter {
             fullRedirectUrl = `${urlObj.protocol}//${urlObj.host}${basePath}${redirectUrl}`;
           }
           
-          console.log(`🔄 Following redirect to: ${fullRedirectUrl}`);
+          console.log(`[Download] Following redirect to: ${fullRedirectUrl}`);
           
           // Reset progress for new redirect
           downloadInfo.url = fullRedirectUrl;
@@ -765,8 +765,8 @@ class DownloadEngine extends EventEmitter {
               }
               
               if (headerFilename && path.basename(downloadInfo.filePath) !== headerFilename) {
-                console.log('📝 Content-Disposition filename detected:', headerFilename);
-                console.log('⚠️ Note: Filename will be updated after download completes');
+                console.log('[Download] Content-Disposition filename detected:', headerFilename);
+                console.log('[Download] Note: Filename will be updated after download completes');
                 // Store the correct filename - we'll rename the file after download completes
                 downloadInfo.correctFilename = headerFilename;
               }
@@ -778,7 +778,8 @@ class DownloadEngine extends EventEmitter {
         res.on('data', (chunk) => {
           chunkCount++;
           if (chunkCount <= 5 || chunkCount % 100 === 0) {
-            console.log(`📦 Chunk #${chunkCount}:`, chunk.length, 'bytes');
+            // Chunk received (logging disabled for performance)
+            // console.log(`[Download] Chunk #${chunkCount}:`, chunk.length, 'bytes');
           }
           
           if (downloadInfo.paused) {
@@ -814,9 +815,9 @@ class DownloadEngine extends EventEmitter {
         });
 
         res.on('end', () => {
-          console.log('✅ Response ended. Total chunks:', chunkCount);
+          console.log('[Download] Response ended. Total chunks:', chunkCount);
           fileStream.end(() => {
-            console.log('✅ File stream closed');
+            console.log('[Download] File stream closed');
             
             // Rename file if we have a correct filename from Content-Disposition
             if (downloadInfo.correctFilename && path.basename(downloadInfo.filePath) !== downloadInfo.correctFilename) {
@@ -836,9 +837,9 @@ class DownloadEngine extends EventEmitter {
                 fs.renameSync(downloadInfo.filePath, newFilePath);
                 downloadInfo.filePath = newFilePath;
                 downloadInfo.filename = path.basename(newFilePath);
-                console.log('✅ File renamed to:', downloadInfo.filename);
+                console.log('[Download] File renamed to:', downloadInfo.filename);
               } catch (err) {
-                console.error('❌ Could not rename file:', err.message);
+                console.error('[Download] Could not rename file:', err.message);
               }
             }
             
@@ -856,7 +857,7 @@ class DownloadEngine extends EventEmitter {
           this.emit('error', { downloadId, error: error.message });
         });
       } else {
-        console.error('❌ Unexpected HTTP status:', res.statusCode);
+        console.error('[Download] Unexpected HTTP status:', res.statusCode);
         fileStream.close();
         downloadInfo.status = 'error';
         downloadInfo.error = `HTTP ${res.statusCode}`;
