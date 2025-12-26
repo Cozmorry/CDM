@@ -39,19 +39,21 @@ class DownloadEngine extends EventEmitter {
         }
       }
       
-      // For now, always use single-segment to avoid complexity
-      // Multi-segment can be enabled later if needed
-      return this.startSingleSegmentDownload(downloadInfo);
+      // Check if server supports range requests and file is large enough for multi-segment
+      // We check range support from the fileInfo we already have (which follows redirects)
+      const supportsRanges = downloadInfo.acceptsRanges !== false && 
+                              downloadInfo.totalBytes > this.minSegmentSize &&
+                              downloadInfo.totalBytes > 0;
       
-      // Check if server supports range requests and file is large enough
-      // const supportsRanges = await this.checkRangeSupport(downloadInfo.url);
-      // if (supportsRanges && downloadInfo.totalBytes > this.minSegmentSize) {
-      //   // Multi-segment download
-      //   return this.startMultiSegmentDownload(downloadInfo);
-      // } else {
-      //   // Single-segment download
-      //   return this.startSingleSegmentDownload(downloadInfo);
-      // }
+      if (supportsRanges) {
+        // Multi-segment download for faster speeds
+        console.log(`🚀 Using multi-segment download (${Math.min(this.maxSegments, Math.max(1, Math.floor(downloadInfo.totalBytes / this.minSegmentSize)))} segments)`);
+        return this.startMultiSegmentDownload(downloadInfo);
+      } else {
+        // Single-segment download (fallback)
+        console.log('📥 Using single-segment download (range requests not supported or file too small)');
+        return this.startSingleSegmentDownload(downloadInfo);
+      }
     } catch (error) {
       console.error('Download start error:', error);
       this.emit('error', { downloadId, error: error.message });
@@ -244,11 +246,15 @@ class DownloadEngine extends EventEmitter {
             }
           }
           
+          // Check if server supports range requests
+          // A 206 response to a Range request means it supports ranges
+          const acceptsRanges = res.statusCode === 206 || res.headers['accept-ranges'] === 'bytes';
+          
           const info = {
             totalBytes: parseInt(res.headers['content-length'] || '0', 10),
             contentType: res.headers['content-type'] || 'application/octet-stream',
             lastModified: res.headers['last-modified'] || null,
-            acceptsRanges: res.headers['accept-ranges'] === 'bytes',
+            acceptsRanges: acceptsRanges,
             statusCode: res.statusCode,
             filename: finalFilename,
             finalUrl: url // Track the final URL after redirects
@@ -266,11 +272,12 @@ class DownloadEngine extends EventEmitter {
         
         res.on('error', (err) => {
           // Even if there's an error, try to resolve with what we have
+          const acceptsRanges = res.statusCode === 206 || res.headers['accept-ranges'] === 'bytes';
           const info = {
             totalBytes: parseInt(res.headers['content-length'] || '0', 10),
             contentType: res.headers['content-type'] || 'application/octet-stream',
             lastModified: res.headers['last-modified'] || null,
-            acceptsRanges: res.headers['accept-ranges'] === 'bytes',
+            acceptsRanges: acceptsRanges,
             statusCode: res.statusCode,
             filename: filenameFromHeader,
             finalUrl: url
@@ -382,15 +389,58 @@ class DownloadEngine extends EventEmitter {
         path: urlObj.pathname + urlObj.search,
         method: 'GET',
         headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': '*/*',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'identity', // Don't use compression
           'Range': `bytes=${segment.start + segment.received}-${segment.end}`
         },
-        timeout: this.timeout
+        timeout: this.timeout,
+        rejectUnauthorized: false
       };
 
       const req = protocol.request(options, (res) => {
+        // Handle redirects in segment downloads
+        if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 303 || res.statusCode === 307 || res.statusCode === 308) {
+          const redirectUrl = res.headers.location;
+          if (redirectUrl) {
+            fileStream.close();
+            res.destroy();
+            
+            // Build full redirect URL
+            let fullRedirectUrl;
+            if (redirectUrl.startsWith('http://') || redirectUrl.startsWith('https://')) {
+              fullRedirectUrl = redirectUrl;
+            } else if (redirectUrl.startsWith('/')) {
+              fullRedirectUrl = `${urlObj.protocol}//${urlObj.host}${redirectUrl}`;
+            } else {
+              const basePath = urlObj.pathname.substring(0, urlObj.pathname.lastIndexOf('/') + 1);
+              fullRedirectUrl = `${urlObj.protocol}//${urlObj.host}${basePath}${redirectUrl}`;
+            }
+            
+            // Update URL and retry
+            const newUrlObj = new URL(fullRedirectUrl);
+            urlObj.hostname = newUrlObj.hostname;
+            urlObj.port = newUrlObj.port;
+            urlObj.pathname = newUrlObj.pathname;
+            urlObj.search = newUrlObj.search;
+            urlObj.protocol = newUrlObj.protocol;
+            
+            // Retry with new URL
+            setTimeout(() => {
+              this.downloadSegment(downloadId, segment, urlObj, protocol)
+                .then(resolve)
+                .catch(reject);
+            }, 100);
+            return;
+          }
+        }
+        
         if (res.statusCode !== 206 && res.statusCode !== 200) {
           fileStream.close();
-          fs.unlinkSync(segment.file);
+          if (fs.existsSync(segment.file)) {
+            fs.unlinkSync(segment.file);
+          }
           if (segment.retries < this.retryAttempts) {
             segment.retries++;
             setTimeout(() => {

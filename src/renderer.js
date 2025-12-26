@@ -561,7 +561,7 @@ async function refreshDownloads() {
 function loadSettingsIntoUI() {
   document.getElementById('downloadPath').value = settings.downloadPath || '';
   document.getElementById('maxConcurrent').value = settings.maxConcurrent || 3;
-  document.getElementById('maxSegments').value = settings.maxSegments || 8;
+  document.getElementById('maxSegments').value = settings.maxSegments || 16;
   document.getElementById('bandwidthLimit').value = settings.bandwidthLimit ? (settings.bandwidthLimit / 1024) : 0;
   document.getElementById('retryAttempts').value = settings.retryAttempts || 3;
   document.getElementById('retryDelay').value = settings.retryDelay || 1000;

@@ -103,8 +103,8 @@ class DownloadPersistence {
     return {
       downloadPath: null, // null = use default
       maxConcurrent: 3,
-      maxSegments: 8,
-      minSegmentSize: 1024 * 1024, // 1MB
+      maxSegments: 16, // Increased for faster downloads (like FDM)
+      minSegmentSize: 512 * 1024, // 512KB minimum per segment (reduced for better utilization)
       bandwidthLimit: 0, // 0 = unlimited
       autoStart: true,
       removeCompletedAfter: 7, // days

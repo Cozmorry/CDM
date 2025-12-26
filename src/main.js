@@ -194,6 +194,7 @@ function initialize() {
           const fileInfo = await downloadEngine.getFileInfo(downloadInfo.url);
           downloadInfo.totalBytes = fileInfo.totalBytes;
           downloadInfo.contentType = fileInfo.contentType;
+          downloadInfo.acceptsRanges = fileInfo.acceptsRanges;
           
           // Update filename if detected and current filename is generic
           if (fileInfo.filename && 
