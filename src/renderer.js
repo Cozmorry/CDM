@@ -57,11 +57,18 @@ addDownloadBtn.addEventListener('click', async () => {
   getFileInfoBtn.style.display = 'inline-block';
   startDownloadBtn.style.display = 'none';
   backToStep1Btn.style.display = 'none';
-  downloadUrlInput.focus();
+  
+  // Clear inputs for new download
+  downloadUrlInput.value = '';
+  downloadFilenameInput.value = '';
+  fileSizeDisplay.textContent = '';
+  fileTypeDisplay.textContent = '';
   
   // Load current download path
   const currentSettings = await window.electronAPI.settingsGet();
-  downloadPathInput.value = currentSettings.downloadPath;
+  downloadPathInput.value = currentSettings.downloadPath || '';
+  
+  downloadUrlInput.focus();
 });
 
 settingsBtn.addEventListener('click', () => {
@@ -212,78 +219,8 @@ browseDownloadPathBtn.addEventListener('click', async () => {
   const result = await window.electronAPI.selectFolder();
   if (result.success) {
     downloadPathInput.value = result.path;
-  }
-});
-
-// Step 1: Get file info
-getFileInfoBtn.addEventListener('click', async () => {
-  const url = downloadUrlInput.value.trim();
-  
-  if (!url) {
-    alert('Please enter a valid URL');
-    return;
-  }
-  
-  try {
-    getFileInfoBtn.disabled = true;
-    getFileInfoBtn.textContent = 'Loading...';
-    fileSizeDisplay.textContent = 'Loading...';
-    fileTypeDisplay.textContent = 'Loading...';
-    
-    // Get file info
-    const fileInfo = await window.electronAPI.getFileInfo(url);
-    console.log('File info:', fileInfo);
-    
-    currentFileInfo = fileInfo;
-    
-    // Display file info
-    const sizeInMB = (fileInfo.totalBytes / (1024 * 1024)).toFixed(2);
-    fileSizeDisplay.textContent = fileInfo.totalBytes > 0 ? `${sizeInMB} MB` : 'Unknown';
-    fileTypeDisplay.textContent = fileInfo.contentType || 'Unknown';
-    
-    // Auto-fill filename from URL if not provided
-    if (!downloadFilenameInput.value) {
-      const urlObj = new URL(url);
-      const suggestedName = urlObj.pathname.split('/').pop() || 'download';
-      downloadFilenameInput.value = suggestedName;
-    }
-    
-    // Show step 2
-    downloadStep1.style.display = 'none';
-    downloadStep2.style.display = 'block';
-    
-  } catch (error) {
-    console.error('Error getting file info:', error);
-    alert('Could not get file info. You can still proceed with the download.');
-    
-    // Show step 2 anyway with unknown info
-    fileSizeDisplay.textContent = 'Unknown';
-    fileTypeDisplay.textContent = 'Unknown';
-    
-    // Auto-fill filename
-    if (!downloadFilenameInput.value) {
-      try {
-        const urlObj = new URL(url);
-        const suggestedName = urlObj.pathname.split('/').pop() || 'download';
-        downloadFilenameInput.value = suggestedName;
-      } catch (e) {
-        downloadFilenameInput.value = 'download';
-      }
-    }
-    
-    downloadStep1.style.display = 'none';
-    downloadStep2.style.display = 'block';
-  } finally {
-    getFileInfoBtn.disabled = false;
-    getFileInfoBtn.textContent = 'Next →';
-  }
-});
-
-// Browse for download path
-browseDownloadPathBtn.addEventListener('click', async () => {
-  const result = await window.electronAPI.selectFolder();
-  if (result.success) {
-    downloadPathInput.value = result.path;
+    // Save the selected path to settings
+    await window.electronAPI.setDownloadPath(result.path);
   }
 });
 
@@ -304,6 +241,11 @@ startDownloadBtn.addEventListener('click', async () => {
   console.log('📤 Calling electronAPI.downloadAdd with:', { url, filename, priority, downloadPath });
   
   try {
+    // Save the download path to settings if it was manually entered or changed
+    if (downloadPath) {
+      await window.electronAPI.setDownloadPath(downloadPath);
+    }
+    
     const result = await window.electronAPI.downloadAdd(url, { filename, priority, downloadPath });
     console.log('📥 Got result from main process:', result);
     

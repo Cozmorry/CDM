@@ -194,6 +194,30 @@ function initialize() {
           const fileInfo = await downloadEngine.getFileInfo(downloadInfo.url);
           downloadInfo.totalBytes = fileInfo.totalBytes;
           downloadInfo.contentType = fileInfo.contentType;
+          
+          // Update filename if detected and current filename is generic
+          if (fileInfo.filename && 
+              (downloadInfo.filename === 'download' || 
+               !downloadInfo.filename || 
+               !path.extname(downloadInfo.filename))) {
+            console.log('📝 Updating filename from fileInfo:', fileInfo.filename);
+            const downloadsDir = path.dirname(downloadInfo.filePath);
+            let newFilePath = path.join(downloadsDir, fileInfo.filename);
+            
+            // Ensure unique filename
+            let counter = 1;
+            while (fs.existsSync(newFilePath)) {
+              const ext = path.extname(fileInfo.filename);
+              const name = path.basename(fileInfo.filename, ext);
+              newFilePath = path.join(downloadsDir, `${name} (${counter})${ext}`);
+              counter++;
+            }
+            
+            downloadInfo.filename = path.basename(newFilePath);
+            downloadInfo.filePath = newFilePath;
+            console.log('✅ Filename updated to:', downloadInfo.filename);
+          }
+          
           downloads.set(downloadInfo.id, downloadInfo);
           if (isDev) console.log('✓ File info:', fileInfo.totalBytes, 'bytes');
         } catch (infoError) {

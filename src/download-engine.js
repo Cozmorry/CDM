@@ -216,14 +216,31 @@ class DownloadEngine extends EventEmitter {
               const finalUrlObj = new URL(url);
               const pathname = finalUrlObj.pathname;
               if (pathname && pathname !== '/' && pathname !== '') {
-                const urlFilename = path.basename(pathname);
+                let urlFilename = path.basename(pathname);
                 if (urlFilename && urlFilename !== '/' && urlFilename !== '') {
+                  // Decode URL-encoded characters (e.g., %20 -> space)
+                  try {
+                    urlFilename = decodeURIComponent(urlFilename);
+                  } catch (e) {
+                    // If decoding fails, try with the original
+                    console.log('⚠️ Could not decode URL filename, using as-is');
+                  }
                   finalFilename = urlFilename;
                   console.log('📝 Filename from URL path:', finalFilename);
                 }
               }
             } catch (e) {
               // Ignore URL parsing errors
+            }
+          }
+          
+          // Also decode filename from header if it came from URL encoding
+          if (finalFilename && finalFilename.includes('%')) {
+            try {
+              finalFilename = decodeURIComponent(finalFilename);
+              console.log('🔓 Decoded URL-encoded filename:', finalFilename);
+            } catch (e) {
+              // Keep original if decoding fails
             }
           }
           
