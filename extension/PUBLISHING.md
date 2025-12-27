@@ -121,23 +121,43 @@ We do not:
 
 **Important:** The extension requires users to install the native messaging host separately. 
 
-### Option A: Provide Installation Instructions
+### Installation Instructions for Users
 
-Add to your extension description:
+Add clear instructions to your extension description:
+
 ```
-Installation:
-1. Install this extension from Chrome Web Store
-2. Download Cozy Download Manager from [your website/GitHub]
-3. Run the native messaging host installer (included with CDM)
-4. Restart your browser
+INSTALLATION INSTRUCTIONS:
+
+1. Install Cozy Download Manager:
+   - Download and install CDM from [your website/GitHub]
+   - Default installation: C:\Program Files\Cozy Download Manager
+
+2. Install Native Messaging Host:
+   - Download the extension source code
+   - Open PowerShell as Administrator
+   - Navigate to the extension folder
+   - Run: .\install-native-messaging.ps1
+
+3. Restart your browser
+
+4. Test the connection:
+   - Click the extension icon
+   - Click "Test Connection"
+   - Should show "Extension connected"
+
+The extension will automatically intercept downloads and open them in CDM 
+for your review and confirmation before starting.
 ```
 
 ### Option B: Create an Installer Package
 
-Create a combined installer that:
-1. Installs CDM
+For a better user experience, create a combined installer that:
+1. Installs CDM (if not already installed)
 2. Installs the native messaging host
-3. Registers the extension
+3. Registers the extension ID
+4. Verifies the setup
+
+This can be included with CDM's installer or distributed separately.
 
 ## Step 5: Review Process
 

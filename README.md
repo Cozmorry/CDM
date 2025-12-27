@@ -1,7 +1,7 @@
 # Cozy Download Manager (CDM)
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-1.0.1-green.svg)
+![Version](https://img.shields.io/badge/version-1.0.2-green.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)
 ![Electron](https://img.shields.io/badge/electron-28.0.0-blue.svg)
 ![Node](https://img.shields.io/badge/node-24.12.0-brightgreen.svg)
@@ -34,6 +34,14 @@ A professional-grade, sophisticated download manager built with Electron - compa
 - **Smart Retry Logic**: Automatic retry with exponential backoff on failures
 - **Bandwidth Management**: Configurable bandwidth limiting to control network usage
 
+### 🌐 Browser Extension Integration
+- **Chromium Extension**: Seamless integration with Chrome, Edge, Brave, and other Chromium browsers
+- **Automatic Download Interception**: Automatically captures browser downloads and sends them to CDM
+- **Smart Download Detection**: Detects download URLs, filenames, and metadata from browser
+- **User Confirmation**: Opens download modal for user verification before starting downloads
+- **Native Messaging**: Secure communication between browser extension and CDM
+- **Context Menu Support**: Right-click links/images/videos to download with CDM
+
 ### 📊 Queue Management
 - **Priority System**: High, Normal, and Low priority levels
 - **Concurrent Downloads**: Configurable maximum concurrent downloads (1-10)
@@ -52,6 +60,9 @@ A professional-grade, sophisticated download manager built with Electron - compa
 - **File Management**: Open files or show in folder directly from the app
 - **Settings Panel**: Comprehensive settings for all download parameters
 - **Tabbed Interface**: Separate views for Active/Queue, Completed, and History
+- **Drag-and-Drop**: Drag URLs directly into the app or paste from clipboard
+- **Duplicate Detection**: Prevents duplicate downloads with skip/replace options
+- **Auto-Switch Views**: Automatically switches to "Completed" tab when all downloads finish
 
 ### 🔧 Technical Excellence
 - **High-Performance Networking**: Uses Node.js native HTTP/HTTPS modules
@@ -63,6 +74,71 @@ A professional-grade, sophisticated download manager built with Electron - compa
 - **Error Handling**: Robust error handling with detailed error messages
 
 ## 📦 Installation
+
+### System Requirements
+
+- **Operating System**: Windows 10 (64-bit) or Windows 11
+- **RAM**: 4GB minimum (8GB recommended for large downloads)
+- **Disk Space**: 200MB for installation + space for your downloads
+- **Internet Connection**: Required for downloads
+- **Optional**: Node.js (only needed for browser extension native messaging host)
+
+### For End Users (Installer)
+
+If you downloaded the Windows installer (`.exe` file) from the releases:
+
+If you downloaded the Windows installer (`.exe` file) from the releases:
+
+1. **Download the Installer**
+   - Download `Cozy Download Manager-X.X.X-Setup.exe` from the [Releases](https://github.com/yourusername/CDM/releases) page
+   - The installer is typically 80-90MB in size
+
+2. **Run the Installer**
+   - Double-click the downloaded `.exe` file
+   - If Windows shows a security warning, click "More info" → "Run anyway"
+   - The installer will open with a dark-themed interface
+
+3. **Follow the Installation Wizard**
+   - **Welcome Page**: Click "Next" to begin
+   - **License Agreement**: Review the MIT License and click "I Agree"
+   - **Installation Location**: Choose where to install (default: `C:\Program Files\Cozy Download Manager`)
+   - **Shortcuts**: Choose whether to create desktop and start menu shortcuts
+   - **Install**: Click "Install" to begin installation
+   - **Finish**: Click "Finish" to complete (optionally launch CDM immediately)
+
+4. **Launch CDM**
+   - Find "Cozy Download Manager" in your Start Menu, or
+   - Double-click the desktop shortcut (if created), or
+   - Navigate to the installation folder and run `Cozy Download Manager.exe`
+
+5. **First Launch**
+   - CDM will open in a compact window
+   - Set your download path in Settings (⚙️ button)
+   - Start downloading!
+
+### Installation Troubleshooting
+
+**Windows Defender / Antivirus Warning**
+- If Windows SmartScreen shows a warning, click "More info" → "Run anyway"
+- This is normal for unsigned applications (code signing can be added later)
+- The installer is safe - you can verify the source code on GitHub
+
+**Installation Fails**
+- Make sure you have administrator privileges
+- Check that you have enough disk space (200MB+)
+- Try running the installer as Administrator (right-click → "Run as administrator")
+
+**CDM Won't Launch After Installation**
+- Check Windows Event Viewer for error messages
+- Make sure all files were installed correctly
+- Try reinstalling the application
+
+**Uninstalling**
+- Go to Windows Settings → Apps → Apps & features
+- Find "Cozy Download Manager" and click "Uninstall"
+- Or use the uninstaller from Start Menu
+
+### For Developers (Source Code)
 
 1. Clone or download this repository
 2. Install dependencies:
@@ -90,14 +166,88 @@ To build the application for distribution:
 npm run build
 ```
 
+This creates a Windows installer in the `dist/` directory.
+
+### Building Optimized Version
+
+For a smaller package size (removes unnecessary locale files):
+```bash
+npm run build:optimized
+```
+
+## 🌐 Browser Extension Setup (Optional)
+
+CDM includes a Chromium browser extension for seamless download integration. This is **optional** - CDM works perfectly fine without it.
+
+### Quick Setup
+
+1. **Install the Extension**:
+   - Download the extension from the [Releases](https://github.com/yourusername/CDM/releases) page
+   - Or load from `extension/` folder in developer mode
+   - See [Extension README](extension/README.md) for detailed instructions
+
+2. **Install Native Messaging Host**:
+   - Open PowerShell as Administrator
+   - Navigate to the extension folder:
+     ```powershell
+     cd path\to\CDM\extension
+     ```
+   - Run the installation script:
+     ```powershell
+     .\install-native-messaging.ps1
+     ```
+
+3. **Restart Your Browser**:
+   - Close and reopen Chrome/Edge/Brave to activate the extension
+
+4. **Start Downloading**:
+   - Downloads from your browser will automatically open in CDM
+   - Review and confirm downloads in the modal before they start
+
+**Note**: The native messaging host requires Node.js to be installed. If you don't have Node.js, you can:
+- Install Node.js from [nodejs.org](https://nodejs.org/)
+- Or use CDM without the browser extension (it works standalone)
+
+For complete extension setup and publishing instructions, see:
+- [Extension README](extension/README.md) - Installation and usage
+- [Extension Publishing Guide](extension/PUBLISHING.md) - Publishing to Chrome Web Store
+
+## 🚀 Quick Start
+
+After installation:
+
+1. **Launch CDM** from Start Menu or desktop shortcut
+2. **Add a Download**:
+   - Click "Add Download" button, or
+   - Drag a URL into the center panel, or
+   - Paste a URL with Ctrl+V
+3. **Review Download Info**: Check the URL, filename, and file size
+4. **Click "Start Download"**: Your download will begin with multi-segment support!
+
+**Pro Tip**: Install the browser extension to automatically send downloads from Chrome/Edge to CDM!
+
 ## 📖 Usage
 
 ### Adding Downloads
 
+**Method 1: Manual Entry**
 1. Click "Add Download" button
-2. Enter the download URL
-3. Optionally specify a custom filename
-4. Select priority (High, Normal, or Low)
+2. Enter the download URL (or paste from clipboard with Ctrl+V)
+3. Click "Get File Info" to fetch file details
+4. Review and edit filename if needed
+5. Select priority (High, Normal, or Low)
+6. Click "Start Download"
+
+**Method 2: Drag-and-Drop**
+1. Drag a URL from your browser into the center panel
+2. The download modal will open automatically with the URL pre-filled
+3. Follow steps 3-6 from Method 1
+
+**Method 3: Browser Extension** (Recommended)
+1. Install the [Cozy Download Manager Extension](extension/README.md)
+2. Download files normally in your browser
+3. CDM will automatically open with the download info pre-filled
+4. Review and confirm the download in the modal
 5. Click "Start Download"
 
 ### Managing Downloads
@@ -186,10 +336,46 @@ The optimized download engine provides:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## 🌐 Browser Extension
+
+CDM includes a Chromium browser extension for seamless browser integration. The extension:
+
+- **Automatically intercepts** browser downloads
+- **Opens CDM modal** for user confirmation (no auto-downloads)
+- **Pre-fills download info** (URL, filename, size)
+- **Works with Chrome, Edge, Brave**, and other Chromium browsers
+
+See the [Extension README](extension/README.md) for installation and usage.
+
+## 📦 Distribution
+
+### Windows Installer
+
+Build a Windows installer:
+```bash
+npm run build
+```
+
+The installer will be in `dist/` directory with:
+- Custom dark-themed installer UI
+- Automatic desktop shortcut creation
+- Program Files installation
+- Uninstaller support
+
+### Browser Extension
+
+Package the extension for Chrome Web Store:
+```powershell
+cd extension
+.\package-extension.ps1
+```
+
+See [Extension Publishing Guide](extension/PUBLISHING.md) for Chrome Web Store submission.
+
 ## 🙏 Acknowledgments
 
 Built with Electron and Node.js. Inspired by professional download managers like FDM and IDM.
 
 ---
 
-**Note**: This is a sophisticated download manager with professional-grade features. The download engine uses advanced networking techniques to maximize download speeds while maintaining reliability and user control.
+**Note**: This is a sophisticated download manager with professional-grade features. The download engine uses advanced networking techniques to maximize download speeds while maintaining reliability and user control. The browser extension provides seamless integration while respecting user choice through confirmation dialogs.
