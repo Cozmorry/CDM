@@ -1,6 +1,28 @@
-# Cozy Download Manager (CDM) 🎄
+# Cozy Download Manager (CDM)
+
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-green.svg)
+![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)
+![Electron](https://img.shields.io/badge/electron-28.0.0-blue.svg)
+![Node](https://img.shields.io/badge/node-24.12.0-brightgreen.svg)
 
 A professional-grade, sophisticated download manager built with Electron - comparable to Free Download Manager (FDM) and Internet Download Manager (IDM).
+
+## 📸 Screenshots
+
+### Main Interface
+![Main Interface](screenshots/main-interface.png)
+*Clean and minimal interface with drag-and-drop support*
+
+### Download Progress
+![Download Progress](screenshots/download-progress.png)
+*Real-time progress tracking with speed and ETA*
+
+### Settings Panel
+![Settings Panel](screenshots/settings.png)
+*Comprehensive settings for download management*
+
+> **Note**: Screenshots should be placed in a `screenshots/` directory. Add your actual screenshots there and they will be displayed above.
 
 ## ✨ Features
 
@@ -162,7 +184,7 @@ The optimized download engine provides:
 
 ## 📝 License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
