@@ -12,3 +12,4 @@ native/Release/
 native/Debug/
 *.node
 build/
+.electron-cache/
