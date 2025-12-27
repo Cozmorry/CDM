@@ -21,6 +21,29 @@ const dataDir = path.join(userDataPath, 'CDM-Data');
 // Downloads directory
 let downloadsDir = path.join(app.getPath('downloads'), 'CDM');
 
+// Helper function to serialize download info for IPC
+function serializeDownloadInfo(downloadInfo) {
+  if (!downloadInfo) return null;
+  return {
+    id: downloadInfo.id,
+    url: downloadInfo.url,
+    filename: downloadInfo.filename,
+    filePath: downloadInfo.filePath,
+    status: downloadInfo.status,
+    progress: downloadInfo.progress,
+    totalBytes: downloadInfo.totalBytes,
+    receivedBytes: downloadInfo.receivedBytes,
+    speed: downloadInfo.speed,
+    startTime: downloadInfo.startTime,
+    endTime: downloadInfo.endTime,
+    completedAt: downloadInfo.completedAt,
+    error: downloadInfo.error,
+    priority: downloadInfo.priority,
+    queuePosition: downloadInfo.queuePosition,
+    contentType: downloadInfo.contentType
+  };
+}
+
 // Initialize
 function initialize() {
   // Initialize persistence
@@ -50,27 +73,6 @@ function initialize() {
   downloadQueue = new DownloadQueue({
     maxConcurrent: settings.maxConcurrent || 3
   });
-  
-  // Helper function to serialize download info for IPC
-  function serializeDownloadInfo(downloadInfo) {
-    return {
-      id: downloadInfo.id,
-      url: downloadInfo.url,
-      filename: downloadInfo.filename,
-      filePath: downloadInfo.filePath,
-      status: downloadInfo.status,
-      progress: downloadInfo.progress,
-      totalBytes: downloadInfo.totalBytes,
-      receivedBytes: downloadInfo.receivedBytes,
-      speed: downloadInfo.speed,
-      startTime: downloadInfo.startTime,
-      endTime: downloadInfo.endTime,
-      error: downloadInfo.error,
-      priority: downloadInfo.priority,
-      queuePosition: downloadInfo.queuePosition,
-      contentType: downloadInfo.contentType
-    };
-  }
 
   // Setup engine event handlers
   downloadEngine.on('progress', (downloadInfo) => {
@@ -285,10 +287,10 @@ function createWindow() {
   const iconExists = fs.existsSync(iconPath);
   
   mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
-    minWidth: 1000,
-    minHeight: 700,
+    width: 800,
+    height: 550,
+    minWidth: 600,
+    minHeight: 400,
     icon: iconExists ? iconPath : undefined,
     webPreferences: {
       nodeIntegration: false,
@@ -354,6 +356,161 @@ app.on('before-quit', () => {
     }
   });
 
+  // Check for duplicate downloads
+  ipcMain.handle('download:check-duplicate', async (event, url, filename) => {
+    try {
+      console.log('[DUPLICATE CHECK] Checking for duplicates:', { url, filename });
+      
+      // Get all downloads from queue (active, queued, completed)
+      const allDownloads = downloadQueue.getAll();
+      const allDownloadsList = [...allDownloads.queue, ...allDownloads.active, ...allDownloads.completed];
+      
+      console.log('[DUPLICATE CHECK] Found downloads in queue:', {
+        queue: allDownloads.queue.length,
+        active: allDownloads.active.length,
+        completed: allDownloads.completed.length
+      });
+      
+      // Also check the downloads Map for any that might not be in the queue
+      for (const [downloadId, download] of downloads.entries()) {
+        if (!allDownloadsList.find(d => d && d.id === downloadId)) {
+          allDownloadsList.push(download);
+        }
+      }
+      
+      console.log('[DUPLICATE CHECK] Total downloads to check:', allDownloadsList.length);
+      
+      // Check all downloads for duplicates
+      for (const download of allDownloadsList) {
+        if (!download) continue;
+        
+        // Check by URL (exact match)
+        if (download.url === url) {
+          console.log('[DUPLICATE CHECK] Found duplicate by URL:', download.url);
+          return {
+            isDuplicate: true,
+            existingDownload: serializeDownloadInfo(download)
+          };
+        }
+        
+        // Check by filename (case-insensitive) - compare both filename and filePath
+        if (filename) {
+          const downloadFilename = download.filename || (download.filePath ? path.basename(download.filePath) : '');
+          if (downloadFilename && downloadFilename.toLowerCase() === filename.toLowerCase()) {
+            console.log('[DUPLICATE CHECK] Found duplicate by filename:', downloadFilename);
+            return {
+              isDuplicate: true,
+              existingDownload: serializeDownloadInfo(download)
+            };
+          }
+          
+          // Also check filePath in case filename was modified
+          if (download.filePath) {
+            const filePathBasename = path.basename(download.filePath);
+            if (filePathBasename.toLowerCase() === filename.toLowerCase()) {
+              console.log('[DUPLICATE CHECK] Found duplicate by filePath:', filePathBasename);
+              return {
+                isDuplicate: true,
+                existingDownload: serializeDownloadInfo(download)
+              };
+            }
+          }
+        }
+      }
+      
+      console.log('[DUPLICATE CHECK] No duplicates found');
+      return { isDuplicate: false };
+    } catch (error) {
+      console.error('[DUPLICATE CHECK] Error checking for duplicates:', error);
+      return { isDuplicate: false };
+    }
+  });
+
+  // Replace an existing download
+  ipcMain.handle('download:replace', async (event, oldDownloadId, url, options = {}) => {
+    try {
+      // Load current settings
+      const currentSettings = persistence.loadSettings();
+      
+      // Cancel/remove the old download
+      const oldDownload = downloads.get(oldDownloadId);
+      if (oldDownload) {
+        // Cancel if it's active or queued
+        if (oldDownload.status === 'downloading' || oldDownload.status === 'paused') {
+          downloadEngine.cancel(oldDownloadId);
+        }
+        if (oldDownload.status === 'pending') {
+          downloadQueue.remove(oldDownloadId);
+        }
+        
+        // Remove from downloads map
+        downloads.delete(oldDownloadId);
+        
+        // Remove from queue if present
+        downloadQueue.remove(oldDownloadId);
+      }
+      
+      // Now add the new download using the same logic as download:add
+      const downloadId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const urlObj = new URL(url);
+      
+      // Get filename
+      let filename = options.filename;
+      if (!filename) {
+        filename = path.basename(urlObj.pathname);
+        if (!filename || filename === '' || filename === '/') {
+          const product = urlObj.searchParams.get('product');
+          if (product) {
+            filename = product;
+          } else {
+            filename = 'download';
+          }
+        }
+      }
+      
+      // Get download directory
+      const downloadsDir = options.downloadPath || currentSettings.downloadPath;
+      
+      // Ensure unique filename
+      let filePath = path.join(downloadsDir, filename);
+      let counter = 1;
+      while (fs.existsSync(filePath)) {
+        const ext = path.extname(filename);
+        const name = path.basename(filename, ext);
+        filePath = path.join(downloadsDir, `${name} (${counter})${ext}`);
+        counter++;
+      }
+      
+      const downloadInfo = {
+        id: downloadId,
+        url: url,
+        filename: path.basename(filePath),
+        filePath: filePath,
+        status: 'pending',
+        progress: 0,
+        totalBytes: 0,
+        receivedBytes: 0,
+        speed: 0,
+        startTime: null,
+        paused: false,
+        priority: options.priority || 'normal',
+        addedAt: Date.now()
+      };
+
+      downloads.set(downloadId, downloadInfo);
+      
+      // Add to queue
+      downloadQueue.add(downloadInfo, options.priority || 'normal');
+      
+      // Save state
+      persistence.saveDownloads(downloads);
+      
+      return { success: true, downloadId };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
   ipcMain.handle('download:add', async (event, url, options = {}) => {
     console.log('\n========================================');
     console.log('📨 IPC HANDLER: download:add called');
@@ -361,7 +518,9 @@ app.on('before-quit', () => {
     console.log('   Options:', JSON.stringify(options));
     console.log('========================================\n');
     try {
-    const downloadId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Load current settings
+    const currentSettings = persistence.loadSettings();
+    
     const urlObj = new URL(url);
     
     // Get filename
@@ -381,8 +540,49 @@ app.on('before-quit', () => {
       }
     }
     
+    // Final duplicate check as safeguard (in case frontend check was bypassed)
+    const allDownloads = downloadQueue.getAll();
+    const allDownloadsList = [...allDownloads.queue, ...allDownloads.active, ...allDownloads.completed];
+    
+    for (const [downloadId, download] of downloads.entries()) {
+      if (!allDownloadsList.find(d => d && d.id === downloadId)) {
+        allDownloadsList.push(download);
+      }
+    }
+    
+    for (const download of allDownloadsList) {
+      if (!download) continue;
+      
+      // Check by URL (exact match)
+      if (download.url === url) {
+        console.log('[DUPLICATE CHECK] Duplicate detected in download:add handler by URL:', url);
+        return { 
+          success: false, 
+          error: 'A download with this URL already exists',
+          isDuplicate: true,
+          existingDownload: serializeDownloadInfo(download)
+        };
+      }
+      
+      // Check by filename
+      if (filename) {
+        const downloadFilename = download.filename || (download.filePath ? path.basename(download.filePath) : '');
+        if (downloadFilename && downloadFilename.toLowerCase() === filename.toLowerCase()) {
+          console.log('[DUPLICATE CHECK] Duplicate detected in download:add handler by filename:', filename);
+          return { 
+            success: false, 
+            error: 'A download with this filename already exists',
+            isDuplicate: true,
+            existingDownload: serializeDownloadInfo(download)
+          };
+        }
+      }
+    }
+    
+    const downloadId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     // Get download directory - use custom path if provided
-    const downloadsDir = options.downloadPath || settings.downloadPath;
+    const downloadsDir = options.downloadPath || currentSettings.downloadPath;
     
     // Ensure unique filename
     let filePath = path.join(downloadsDir, filename);
@@ -494,10 +694,11 @@ ipcMain.handle('download:open-folder', async (event, downloadId) => {
 
 ipcMain.handle('download:get-all', async () => {
   const all = downloadQueue.getAll();
+  // Serialize all downloads to avoid cloning errors
   return {
-    queue: all.queue,
-    active: all.active,
-    completed: all.completed
+    queue: all.queue.map(d => serializeDownloadInfo(d)),
+    active: all.active.map(d => serializeDownloadInfo(d)),
+    completed: all.completed.map(d => serializeDownloadInfo(d))
   };
 });
 

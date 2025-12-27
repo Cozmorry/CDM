@@ -11,7 +11,7 @@ let settings = {};
 // Note: In a browser context, we'll use the pre-defined SVG strings
 // These match the react-icons/fi (Feather Icons) style
 const icons = {
-  settings: `<svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
+  settings: `<svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
   plus: `<svg class="icon icon-inline" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
   pause: `<svg class="icon icon-inline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`,
   play: `<svg class="icon icon-inline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`,
@@ -29,10 +29,14 @@ const settingsBtn = document.getElementById('settingsBtn');
 const downloadList = document.getElementById('downloadList');
 const addDownloadModal = document.getElementById('addDownloadModal');
 const settingsModal = document.getElementById('settingsModal');
+const duplicateModal = document.getElementById('duplicateModal');
 const closeModal = document.getElementById('closeModal');
 const closeSettingsModal = document.getElementById('closeSettingsModal');
+const closeDuplicateModal = document.getElementById('closeDuplicateModal');
 const cancelBtn = document.getElementById('cancelBtn');
 const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
+const skipDuplicateBtn = document.getElementById('skipDuplicateBtn');
+const replaceDuplicateBtn = document.getElementById('replaceDuplicateBtn');
 const startDownloadBtn = document.getElementById('startDownloadBtn');
 const saveSettingsBtn = document.getElementById('saveSettingsBtn');
 const downloadUrlInput = document.getElementById('downloadUrl');
@@ -50,41 +54,76 @@ const queuedCountEl = document.getElementById('queuedCount');
 const activeCountEl = document.getElementById('activeCount');
 const completedCountEl = document.getElementById('completedCount');
 const totalSpeedEl = document.getElementById('totalSpeed');
+const statusTextEl = document.getElementById('statusText');
+const statusBar = document.getElementById('statusBar');
+const tabsContainer = document.getElementById('tabsContainer');
 const tabButtons = document.querySelectorAll('.tab-btn');
+const dragDropZone = document.getElementById('dragDropZone');
+const emptyStateEl = document.getElementById('emptyState');
+
+// Helper function to switch tabs
+function switchTab(tabName) {
+  tabButtons.forEach(b => {
+    if (b.dataset.tab === tabName) {
+      b.classList.add('active');
+    } else {
+      b.classList.remove('active');
+    }
+  });
+  currentTab = tabName;
+  renderDownloads();
+}
 
 // Tab switching
 tabButtons.forEach(btn => {
   btn.addEventListener('click', () => {
-    tabButtons.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentTab = btn.dataset.tab;
-    renderDownloads();
+    switchTab(btn.dataset.tab);
   });
 });
 
 // Modal state
 let currentFileInfo = null;
 
+// Helper function to validate URL
+function isValidURL(string) {
+  try {
+    const url = new URL(string);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch (_) {
+    return false;
+  }
+}
+
+// Helper function to extract URL from clipboard text
+function extractURLFromText(text) {
+  if (!text) return null;
+  const trimmed = text.trim();
+  if (isValidURL(trimmed)) {
+    return trimmed;
+  }
+  // Try to find URL in text
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const matches = trimmed.match(urlRegex);
+  if (matches && matches.length > 0) {
+    return matches[0];
+  }
+  return null;
+}
+
+// Get URL from clipboard
+async function getClipboardURL() {
+  try {
+    const clipboardText = await window.electronAPI.readClipboard();
+    return extractURLFromText(clipboardText);
+  } catch (error) {
+    console.error('Error reading clipboard:', error);
+    return null;
+  }
+}
+
 // Event Listeners
 addDownloadBtn.addEventListener('click', async () => {
-  addDownloadModal.classList.add('active');
-  downloadStep1.style.display = 'block';
-  downloadStep2.style.display = 'none';
-  getFileInfoBtn.style.display = 'inline-block';
-  startDownloadBtn.style.display = 'none';
-  backToStep1Btn.style.display = 'none';
-  
-  // Clear inputs for new download
-  downloadUrlInput.value = '';
-  downloadFilenameInput.value = '';
-  fileSizeDisplay.textContent = '';
-  fileTypeDisplay.textContent = '';
-  
-  // Load current download path
-  const currentSettings = await window.electronAPI.settingsGet();
-  downloadPathInput.value = currentSettings.downloadPath || '';
-  
-  downloadUrlInput.focus();
+  await openModalWithURL();
 });
 
 settingsBtn.addEventListener('click', () => {
@@ -254,7 +293,30 @@ startDownloadBtn.addEventListener('click', async () => {
     return;
   }
   
-  console.log('[INFO] Calling electronAPI.downloadAdd with:', { url, filename, priority, downloadPath });
+  // Check for duplicate downloads
+  const duplicateCheck = await window.electronAPI.checkDuplicate(url, filename);
+  
+  if (duplicateCheck.isDuplicate) {
+    // Show duplicate modal
+    document.getElementById('duplicateUrl').textContent = duplicateCheck.existingDownload.url;
+    document.getElementById('duplicateFilename').textContent = duplicateCheck.existingDownload.filename;
+    document.getElementById('duplicateStatus').textContent = duplicateCheck.existingDownload.status;
+    
+    // Store the pending download info for later use
+    window.pendingDownload = { url, filename, priority, downloadPath };
+    window.duplicateDownloadId = duplicateCheck.existingDownload.id;
+    
+    duplicateModal.classList.add('active');
+    return;
+  }
+  
+  // No duplicate, proceed with download
+  await proceedWithDownload(url, filename, priority, downloadPath);
+});
+
+// Helper function to proceed with download
+async function proceedWithDownload(url, filename, priority, downloadPath, replaceDownloadId = null) {
+  console.log('[INFO] Proceeding with download:', { url, filename, priority, downloadPath, replaceDownloadId });
   
   try {
     // Save the download path to settings if it was manually entered or changed
@@ -262,7 +324,44 @@ startDownloadBtn.addEventListener('click', async () => {
       await window.electronAPI.setDownloadPath(downloadPath);
     }
     
-    const result = await window.electronAPI.downloadAdd(url, { filename, priority, downloadPath });
+    let result;
+    if (replaceDownloadId) {
+      // Replace existing download
+      result = await window.electronAPI.replaceDownload(replaceDownloadId, url, { filename, priority, downloadPath });
+    } else {
+      // Add new download - check for duplicate again as safeguard
+      const duplicateCheck = await window.electronAPI.checkDuplicate(url, filename);
+      if (duplicateCheck.isDuplicate) {
+        // Show duplicate modal
+        document.getElementById('duplicateUrl').textContent = duplicateCheck.existingDownload.url;
+        document.getElementById('duplicateFilename').textContent = duplicateCheck.existingDownload.filename;
+        document.getElementById('duplicateStatus').textContent = duplicateCheck.existingDownload.status;
+        
+        window.pendingDownload = { url, filename, priority, downloadPath };
+        window.duplicateDownloadId = duplicateCheck.existingDownload.id;
+        
+        duplicateModal.classList.add('active');
+        return; // Don't proceed with download
+      }
+      
+      // Add new download
+      result = await window.electronAPI.downloadAdd(url, { filename, priority, downloadPath });
+      
+      // Check if backend also detected a duplicate
+      if (!result.success && result.isDuplicate) {
+        // Show duplicate modal
+        document.getElementById('duplicateUrl').textContent = result.existingDownload.url;
+        document.getElementById('duplicateFilename').textContent = result.existingDownload.filename;
+        document.getElementById('duplicateStatus').textContent = result.existingDownload.status;
+        
+        window.pendingDownload = { url, filename, priority, downloadPath };
+        window.duplicateDownloadId = result.existingDownload.id;
+        
+        duplicateModal.classList.add('active');
+        return; // Don't proceed with download
+      }
+    }
+    
     console.log('[INFO] Got result from main process:', result);
     
     if (result.success) {
@@ -274,6 +373,42 @@ startDownloadBtn.addEventListener('click', async () => {
   } catch (error) {
     console.error('[ERROR] Error calling downloadAdd:', error);
     alert('Error adding download: ' + error.message);
+  }
+}
+
+// Duplicate modal handlers
+closeDuplicateModal.addEventListener('click', () => {
+  duplicateModal.classList.remove('active');
+  window.pendingDownload = null;
+  window.duplicateDownloadId = null;
+});
+
+skipDuplicateBtn.addEventListener('click', () => {
+  duplicateModal.classList.remove('active');
+  window.pendingDownload = null;
+  window.duplicateDownloadId = null;
+  // Just close, don't add the download
+});
+
+replaceDuplicateBtn.addEventListener('click', async () => {
+  if (window.pendingDownload && window.duplicateDownloadId) {
+    duplicateModal.classList.remove('active');
+    const { url, filename, priority, downloadPath } = window.pendingDownload;
+    const replaceDownloadId = window.duplicateDownloadId;
+    
+    window.pendingDownload = null;
+    window.duplicateDownloadId = null;
+    
+    await proceedWithDownload(url, filename, priority, downloadPath, replaceDownloadId);
+  }
+});
+
+// Close duplicate modal when clicking outside
+duplicateModal.addEventListener('click', (e) => {
+  if (e.target === duplicateModal) {
+    duplicateModal.classList.remove('active');
+    window.pendingDownload = null;
+    window.duplicateDownloadId = null;
   }
 });
 
@@ -319,6 +454,36 @@ settingsModal.addEventListener('click', (e) => {
 
 function closeModalHandler() {
   addDownloadModal.classList.remove('active');
+  
+  // Clear all download info to avoid congestion
+  downloadUrlInput.value = '';
+  downloadFilenameInput.value = '';
+  fileSizeDisplay.textContent = '';
+  fileTypeDisplay.textContent = '';
+  currentFileInfo = null;
+  
+  // Clear file info display if it exists (remove any warnings or extra content)
+  const fileInfoDisplay = document.getElementById('fileInfoDisplay');
+  if (fileInfoDisplay) {
+    // Clear file size and type displays
+    fileSizeDisplay.textContent = '-';
+    fileTypeDisplay.textContent = '-';
+    // Remove any warning elements that might have been added
+    const warnings = fileInfoDisplay.querySelectorAll('div[style*="background"]');
+    warnings.forEach(warning => warning.remove());
+  }
+  
+  // Reset to step 1
+  downloadStep1.style.display = 'block';
+  downloadStep2.style.display = 'none';
+  getFileInfoBtn.style.display = 'inline-block';
+  startDownloadBtn.style.display = 'none';
+  backToStep1Btn.style.display = 'none';
+  
+  // Reset priority to default
+  if (downloadPrioritySelect) {
+    downloadPrioritySelect.value = 'normal';
+  }
 }
 
 function closeSettingsModalHandler() {
@@ -439,7 +604,9 @@ function escapeHtml(text) {
 }
 
 function renderDownloads() {
-  downloadList.innerHTML = '';
+  // Remove only download items, not the drag-drop zone
+  const existingItems = downloadList.querySelectorAll('.download-item, .empty-state');
+  existingItems.forEach(item => item.remove());
   
   let itemsToShow = [];
   
@@ -452,6 +619,23 @@ function renderDownloads() {
     loadHistory();
     return;
   }
+  
+  // Show/hide tabs based on whether there are downloads
+  const hasDownloads = downloads.active.length > 0 || downloads.queue.length > 0 || downloads.completed.length > 0;
+  if (tabsContainer) {
+    tabsContainer.style.display = hasDownloads ? 'flex' : 'none';
+  }
+  
+  // Show drag-drop zone when no downloads on active tab
+  if (itemsToShow.length === 0 && currentTab === 'active') {
+    if (dragDropZone) dragDropZone.style.display = 'flex';
+    if (emptyStateEl) emptyStateEl.style.display = 'none';
+    return;
+  }
+  
+  // Hide drag-drop zone when there are downloads
+  if (dragDropZone) dragDropZone.style.display = 'none';
+  if (emptyStateEl) emptyStateEl.style.display = 'none';
   
   if (itemsToShow.length === 0) {
     const emptyState = document.createElement('div');
@@ -472,7 +656,12 @@ function renderDownloads() {
 
 async function loadHistory() {
   const history = await window.electronAPI.historyGet(50);
-  downloadList.innerHTML = '';
+  // Remove only download items, not the drag-drop zone
+  const existingItems = downloadList.querySelectorAll('.download-item, .empty-state');
+  existingItems.forEach(item => item.remove());
+  
+  // Hide drag-drop zone when showing history
+  if (dragDropZone) dragDropZone.style.display = 'none';
   
   if (history.length === 0) {
     const emptyState = document.createElement('div');
@@ -513,8 +702,13 @@ function updateDownloadItem(download) {
   }
   
   // Move to completed if status changed
-  if (download.status === 'completed' && activeIndex !== -1) {
-    downloads.active.splice(activeIndex, 1);
+  if (download.status === 'completed') {
+    if (activeIndex !== -1) {
+      downloads.active.splice(activeIndex, 1);
+    }
+    if (queueIndex !== -1) {
+      downloads.queue.splice(queueIndex, 1);
+    }
     if (!downloads.completed.find(d => d.id === download.id)) {
       downloads.completed.push(download);
     }
@@ -526,6 +720,16 @@ function updateDownloadItem(download) {
     if (!downloads.active.find(d => d.id === download.id)) {
       downloads.active.push(download);
     }
+  }
+  
+  // Auto-switch to completed tab when all downloads finish
+  if (download.status === 'completed' && 
+      downloads.active.length === 0 && 
+      downloads.queue.length === 0 && 
+      downloads.completed.length > 0 &&
+      currentTab === 'active') {
+    switchTab('completed');
+    return; // Exit early since switchTab calls renderDownloads
   }
   
   // Re-render if current tab shows this download
@@ -561,10 +765,27 @@ function updateStats() {
     }
   });
   
-  queuedCountEl.textContent = downloads.queue.length;
-  activeCountEl.textContent = downloads.active.length;
-  completedCountEl.textContent = downloads.completed.length;
-  totalSpeedEl.textContent = formatSpeed(totalSpeed);
+  // Show/hide status bar based on whether there are downloads
+  const hasDownloads = downloads.active.length > 0 || downloads.queue.length > 0;
+  if (statusBar) {
+    statusBar.style.display = hasDownloads ? 'flex' : 'none';
+  }
+  
+  if (queuedCountEl) queuedCountEl.textContent = downloads.queue.length;
+  if (activeCountEl) activeCountEl.textContent = downloads.active.length;
+  if (completedCountEl) completedCountEl.textContent = downloads.completed.length;
+  if (totalSpeedEl) totalSpeedEl.textContent = formatSpeed(totalSpeed);
+  
+  // Update status text
+  if (statusTextEl) {
+    if (downloads.active.length > 0) {
+      statusTextEl.textContent = `${downloads.active.length} active download${downloads.active.length > 1 ? 's' : ''}`;
+    } else if (downloads.queue.length > 0) {
+      statusTextEl.textContent = `${downloads.queue.length} in queue`;
+    } else {
+      statusTextEl.textContent = 'Ready';
+    }
+  }
 }
 
 async function refreshDownloads() {
@@ -655,6 +876,11 @@ window.electronAPI.downloadGetAll().then((all) => {
   downloads = all;
   renderDownloads();
   updateStats();
+  
+  // Show drag-drop zone initially if no downloads
+  if (dragDropZone && currentTab === 'active' && downloads.active.length === 0 && downloads.queue.length === 0) {
+    dragDropZone.style.display = 'flex';
+  }
 });
 
 window.electronAPI.settingsGet().then((loadedSettings) => {
@@ -681,6 +907,101 @@ if (document.readyState === 'loading') {
 } else {
   initializeIcons();
 }
+
+// Helper function to open modal with URL
+async function openModalWithURL(url = null) {
+  addDownloadModal.classList.add('active');
+  downloadStep1.style.display = 'block';
+  downloadStep2.style.display = 'none';
+  getFileInfoBtn.style.display = 'inline-block';
+  startDownloadBtn.style.display = 'none';
+  backToStep1Btn.style.display = 'none';
+  
+  // Clear or set URL
+  if (url) {
+    downloadUrlInput.value = url;
+  } else {
+    downloadUrlInput.value = '';
+    // Try to get URL from clipboard
+    const clipboardURL = await getClipboardURL();
+    if (clipboardURL) {
+      downloadUrlInput.value = clipboardURL;
+    }
+  }
+  
+  downloadFilenameInput.value = '';
+  fileSizeDisplay.textContent = '';
+  fileTypeDisplay.textContent = '';
+  
+  const currentSettings = await window.electronAPI.settingsGet();
+  downloadPathInput.value = currentSettings.downloadPath || '';
+  downloadUrlInput.focus();
+}
+
+// Drag and Drop functionality
+if (dragDropZone) {
+  // Make drag-drop zone clickable
+  dragDropZone.addEventListener('click', async () => {
+    await openModalWithURL();
+  });
+
+  // Prevent default drag behaviors
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dragDropZone.addEventListener(eventName, preventDefaults, false);
+    document.body.addEventListener(eventName, preventDefaults, false);
+  });
+
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  // Highlight drop zone when item is dragged over it
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dragDropZone.addEventListener(eventName, () => {
+      dragDropZone.classList.add('drag-over');
+    }, false);
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    dragDropZone.addEventListener(eventName, () => {
+      dragDropZone.classList.remove('drag-over');
+    }, false);
+  });
+
+  // Handle dropped files/links
+  dragDropZone.addEventListener('drop', async (e) => {
+    const data = e.dataTransfer.getData('text/plain') || e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text');
+    
+    if (data) {
+      const url = extractURLFromText(data);
+      if (url && isValidURL(url)) {
+        await openModalWithURL(url);
+      } else {
+        // If dropped text is not a valid URL, still open modal and try clipboard
+        await openModalWithURL();
+      }
+    } else {
+      // No text data, try clipboard
+      await openModalWithURL();
+    }
+  }, false);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', async (e) => {
+  // Ctrl+V or Cmd+V to paste URL
+  if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+    // Only handle if not in an input field
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+      const clipboardURL = await getClipboardURL();
+      if (clipboardURL) {
+        await openModalWithURL(clipboardURL);
+        e.preventDefault();
+      }
+    }
+  }
+});
 
 // Auto-refresh stats every second
 setInterval(updateStats, 1000);

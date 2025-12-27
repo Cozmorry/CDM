@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, clipboard } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // Download management
@@ -39,6 +39,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // History
   historyGet: (limit) => ipcRenderer.invoke('history:get', limit),
   historyClear: () => ipcRenderer.invoke('history:clear'),
+  
+  // Duplicate detection
+  checkDuplicate: (url, filename) => ipcRenderer.invoke('download:check-duplicate', url, filename),
+  replaceDownload: (oldDownloadId, url, options) => ipcRenderer.invoke('download:replace', oldDownloadId, url, options),
+  
+  // Clipboard
+  readClipboard: () => {
+    return clipboard.readText();
+  },
   
   // Remove listeners
   removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel)

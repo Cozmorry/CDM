@@ -15,41 +15,46 @@
         <h1>Cozy Download Manager</h1>
       </div>
       <div class="header-actions">
-        <button class="btn-icon-header" id="settingsBtn" title="Settings"></button>
         <button class="btn-primary" id="addDownloadBtn"></button>
+        <button class="btn-icon-header" id="settingsBtn" title="Settings"></button>
       </div>
     </header>
 
     <div class="download-section">
-      <div class="download-stats">
-        <div class="stat-item">
-          <span class="stat-label">Queued:</span>
-          <span class="stat-value" id="queuedCount">0</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Active:</span>
-          <span class="stat-value" id="activeCount">0</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Completed:</span>
-          <span class="stat-value" id="completedCount">0</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Total Speed:</span>
-          <span class="stat-value" id="totalSpeed">0 KB/s</span>
-        </div>
-      </div>
-
-      <div class="tabs">
+      <div class="tabs" id="tabsContainer" style="display: none;">
         <button class="tab-btn active" data-tab="active">Active & Queue</button>
         <button class="tab-btn" data-tab="completed">Completed</button>
         <button class="tab-btn" data-tab="history">History</button>
       </div>
 
       <div class="download-list" id="downloadList">
-        <div class="empty-state">
+        <div class="drag-drop-zone" id="dragDropZone">
+          <div class="drag-drop-content">
+            <div class="drag-drop-icon-container">
+              <svg class="drag-drop-icon" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <div class="drag-drop-pulse"></div>
+            </div>
+            <h3>Drag-and-drop URL here</h3>
+            <p class="drag-drop-hint">Or paste a URL (Ctrl+V)</p>
+          </div>
+        </div>
+        <div class="empty-state" id="emptyState" style="display: none;">
           <p>No downloads yet. Click "Add Download" to get started!</p>
         </div>
+      </div>
+    </div>
+
+    <div class="status-bar" id="statusBar" style="display: none;">
+      <div class="status-left">
+        <span id="statusText">Ready</span>
+      </div>
+      <div class="status-right">
+        <span class="status-item">▼ <span id="totalSpeed">0 B/s</span></span>
+        <span class="status-item">Active: <span id="activeCount">0</span></span>
+        <span class="status-item">Queued: <span id="queuedCount">0</span></span>
       </div>
     </div>
   </div>
@@ -161,6 +166,29 @@
       <div class="modal-footer">
         <button class="btn-secondary" id="cancelSettingsBtn">Cancel</button>
         <button class="btn-primary" id="saveSettingsBtn">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Duplicate Download Modal -->
+  <div class="modal" id="duplicateModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Duplicate Download Detected</h2>
+        <button class="modal-close" id="closeDuplicateModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>A download with the same URL or filename already exists:</p>
+        <div class="info-box" id="duplicateInfo">
+          <p><strong>URL:</strong> <span id="duplicateUrl"></span></p>
+          <p><strong>Filename:</strong> <span id="duplicateFilename"></span></p>
+          <p><strong>Status:</strong> <span id="duplicateStatus"></span></p>
+        </div>
+        <p style="margin-top: 1rem;">What would you like to do?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="skipDuplicateBtn">Skip</button>
+        <button class="btn-primary" id="replaceDuplicateBtn">Replace</button>
       </div>
     </div>
   </div>
