@@ -9,7 +9,8 @@
     "build": "electron-builder",
     "build:win": "electron-builder --win",
     "build:dir": "electron-builder --dir",
-    "build:portable": "electron-builder --win portable"
+    "build:portable": "electron-builder --win portable",
+    "build:optimized": "electron-builder && powershell -ExecutionPolicy Bypass -File .\\build\\optimize-size.ps1"
   },
   "keywords": [
     "download-manager",
@@ -34,8 +35,13 @@
     },
     "files": [
       "src/**/*",
-      "assets/**/*"
+      "assets/**/*",
+      "!**/node_modules/**/*",
+      "!**/*.map"
     ],
+    "asar": true,
+    "asarUnpack": [],
+    "compression": "maximum",
     "win": {
       "target": [
         {
@@ -50,6 +56,13 @@
       "verifyUpdateCodeSignature": false,
       "certificateFile": null,
       "certificatePassword": null
+    },
+    "electronDownload": {
+      "cache": ".electron-cache"
+    },
+    "extraResources": [],
+    "extraMetadata": {
+      "main": "src/main.js"
     },
     "nsis": {
       "oneClick": false,

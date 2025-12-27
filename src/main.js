@@ -14,6 +14,9 @@ let downloadQueue;
 let persistence;
 let downloads = new Map(); // Store all downloads (active, queued, completed)
 
+// Make mainWindow globally accessible for native messaging
+global.mainWindow = null;
+
 // Data directory
 const userDataPath = app.getPath('userData');
 const dataDir = path.join(userDataPath, 'CDM-Data');
@@ -302,10 +305,16 @@ function createWindow() {
 
   mainWindow.loadFile('src/index.html');
 
+  // Make mainWindow globally accessible for native messaging
+  global.mainWindow = mainWindow;
+
   // Open DevTools in development
   if (process.argv.includes('--dev')) {
     mainWindow.webContents.openDevTools();
   }
+  
+  // Watch for native messaging downloads (file-based communication)
+  watchNativeMessagingDownloads();
   
   // Send initial data to renderer
   mainWindow.webContents.once('did-finish-load', () => {
@@ -319,6 +328,145 @@ function createWindow() {
     const settings = persistence.loadSettings();
     mainWindow.webContents.send('settings:loaded', settings);
   });
+}
+
+// Watch for native messaging downloads (file-based communication)
+function watchNativeMessagingDownloads() {
+  const os = require('os');
+  const tempDir = os.tmpdir();
+  const watchDir = path.join(tempDir, 'cdm-downloads');
+  
+  // Create watch directory if it doesn't exist
+  if (!fs.existsSync(watchDir)) {
+    fs.mkdirSync(watchDir, { recursive: true });
+  }
+  
+  console.log('[Main] Watching for native messaging downloads in:', watchDir);
+  
+  // Watch for new JSON files
+  fs.watch(watchDir, { recursive: false }, (eventType, filename) => {
+    if (filename && filename.endsWith('.json')) {
+      const filePath = path.join(watchDir, filename);
+      
+      // Wait a bit for file to be fully written
+      setTimeout(() => {
+        if (fs.existsSync(filePath)) {
+          try {
+            // Try reading the file multiple times if it's still being written
+            let downloadInfo = null;
+            let attempts = 0;
+            const maxAttempts = 10;
+            
+            while (attempts < maxAttempts) {
+              try {
+                const content = fs.readFileSync(filePath, 'utf8');
+                downloadInfo = JSON.parse(content);
+                break;
+              } catch (parseError) {
+                attempts++;
+                if (attempts >= maxAttempts) {
+                  throw parseError;
+                }
+                // Wait a bit more for file to be fully written
+                require('child_process').execSync('timeout /t 0.1 /nobreak >nul 2>&1', { shell: true });
+              }
+            }
+            
+            if (downloadInfo) {
+              console.log('[Main] Native messaging download detected:', downloadInfo);
+              
+              // Process the download
+              handleNativeMessagingDownload(downloadInfo);
+              
+              // Delete the file after processing
+              try {
+                fs.unlinkSync(filePath);
+              } catch (unlinkError) {
+                console.warn('[Main] Could not delete temp file:', unlinkError);
+              }
+            }
+          } catch (error) {
+            console.error('[Main] Error processing native messaging download:', error);
+          }
+        }
+      }, 200);
+    }
+  });
+  
+  // Also check for existing files on startup (in case CDM was started after download was sent)
+  setTimeout(() => {
+    try {
+      const existingFiles = fs.readdirSync(watchDir).filter(f => f.endsWith('.json'));
+      if (existingFiles.length > 0) {
+        console.log('[Main] Found', existingFiles.length, 'pending download(s)');
+        existingFiles.forEach(filename => {
+          const filePath = path.join(watchDir, filename);
+          try {
+            const downloadInfo = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            console.log('[Main] Processing pending download:', downloadInfo);
+            handleNativeMessagingDownload(downloadInfo);
+            fs.unlinkSync(filePath);
+          } catch (error) {
+            console.error('[Main] Error processing pending download:', error);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('[Main] Error checking for pending downloads:', error);
+    }
+  }, 1000);
+}
+
+// Handle downloads from native messaging (browser extension)
+async function handleNativeMessagingDownload(downloadInfo) {
+  try {
+    console.log('[Main] Processing native messaging download:', downloadInfo);
+    
+    // Extract filename from URL if not provided
+    let filename = downloadInfo.filename;
+    if (!filename || filename === 'download') {
+      try {
+        const urlObj = new URL(downloadInfo.url);
+        filename = path.basename(urlObj.pathname);
+        if (!filename || filename === '' || filename === '/') {
+          const product = urlObj.searchParams.get('product');
+          if (product) {
+            filename = product;
+          } else {
+            filename = 'download';
+          }
+        }
+      } catch (e) {
+        filename = 'download';
+      }
+    }
+    
+    // Show window and open modal with pre-filled info (don't auto-add download)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show();
+      mainWindow.focus();
+      
+      // Wait a bit for window to be ready, then send message to renderer
+      setTimeout(() => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          // Send message to renderer to open modal with pre-filled URL and filename
+          mainWindow.webContents.send('native-messaging:open-modal', {
+            url: downloadInfo.url,
+            filename: filename,
+            totalBytes: downloadInfo.totalBytes || 0
+          });
+        }
+      }, 500);
+    } else {
+      console.warn('[Main] Main window not available, cannot open modal');
+    }
+    
+    console.log('[Main] Native messaging download modal opened for user verification');
+    return { success: true, message: 'Modal opened for user verification' };
+  } catch (error) {
+    console.error('[Main] Error handling native messaging download:', error);
+    return { success: false, error: error.message };
+  }
 }
 
 app.whenReady().then(() => {

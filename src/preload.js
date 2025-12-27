@@ -49,6 +49,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return clipboard.readText();
   },
   
+  // Native messaging
+  onNativeMessagingOpenModal: (callback) => {
+    ipcRenderer.on('native-messaging:open-modal', (event, downloadInfo) => callback(downloadInfo));
+  },
+  
   // Remove listeners
   removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel)
 });

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cozy Download Manager</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="icons/icon48.png" alt="CDM" class="logo">
+      <h1>Cozy Download Manager</h1>
+    </div>
+    
+    <div class="status" id="status">
+      <div class="status-indicator" id="statusIndicator"></div>
+      <span id="statusText">Checking connection...</span>
+    </div>
+    
+    <div class="settings">
+      <label>
+        <input type="checkbox" id="autoIntercept" checked>
+        <span>Automatically intercept downloads</span>
+      </label>
+      
+      <label>
+        <input type="checkbox" id="showNotifications" checked>
+        <span>Show notifications</span>
+      </label>
+    </div>
+    
+    <div class="actions">
+      <button id="testConnection" class="btn btn-primary">Test Connection</button>
+      <button id="openCDM" class="btn btn-secondary">Open CDM</button>
+    </div>
+    
+    <div class="footer">
+      <small>Version 1.0.0</small>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
+

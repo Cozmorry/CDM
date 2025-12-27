@@ -1005,3 +1005,27 @@ document.addEventListener('keydown', async (e) => {
 
 // Auto-refresh stats every second
 setInterval(updateStats, 1000);
+
+// Listen for native messaging downloads (open modal instead of auto-adding)
+if (window.electronAPI && window.electronAPI.onNativeMessagingOpenModal) {
+  window.electronAPI.onNativeMessagingOpenModal(async (downloadInfo) => {
+    console.log('[Renderer] Native messaging download received, opening modal:', downloadInfo);
+    // Open modal with pre-filled URL
+    await openModalWithURL(downloadInfo.url);
+    
+    // Set filename if provided (after modal is open)
+    if (downloadInfo.filename && downloadInfo.filename !== 'download') {
+      downloadFilenameInput.value = downloadInfo.filename;
+    }
+    
+    // Auto-fetch file info if URL is provided
+    if (downloadInfo.url) {
+      // Wait a bit for modal to fully render, then click get file info
+      setTimeout(() => {
+        if (getFileInfoBtn && getFileInfoBtn.style.display !== 'none') {
+          getFileInfoBtn.click();
+        }
+      }, 100);
+    }
+  });
+}

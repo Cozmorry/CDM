@@ -1,0 +1,9 @@
+{
+    "name":  "com.cozy.downloadmanager",
+    "description":  "Cozy Download Manager Native Messaging Host",
+    "path":  "C:\\\\Users\\\\cozmo\\\\OneDrive\\\\Desktop\\\\CDM\\\\extension\\\\native-messaging-host.bat",
+    "type":  "stdio",
+    "allowed_origins":  [
+                            "chrome-extension://jafkfohjaifhaaodmogiekojigaogadc/"
+                        ]
+}
