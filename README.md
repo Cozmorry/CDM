@@ -1,7 +1,7 @@
 # Cozy Download Manager (CDM)
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-1.0.0-green.svg)
+![Version](https://img.shields.io/badge/version-1.0.1-green.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)
 ![Electron](https://img.shields.io/badge/electron-28.0.0-blue.svg)
 ![Node](https://img.shields.io/badge/node-24.12.0-brightgreen.svg)
